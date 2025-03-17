@@ -130,7 +130,7 @@ def main():
         y = entry_data_inicio.winfo_rooty()
         popup = Toplevel(frame_filtros)
         popup.geometry(f"+{x}+{y}")
-        cal = Calendar(popup, date_pattern="yyyy-mm-dd")
+        cal = Calendar(popup, date_pattern="dd/mm/yyyy")
         cal.pack()
         Button(popup, text="Selecionar", command=lambda: selecionar_data(cal.get_date(), entry_data_inicio, popup)).pack()
 
@@ -139,7 +139,7 @@ def main():
         y = entry_data_fim.winfo_rooty()
         popup = Toplevel(frame_filtros)
         popup.geometry(f"+{x}+{y}")
-        cal = Calendar(popup, date_pattern="yyyy-mm-dd")
+        cal = Calendar(popup, date_pattern="dd/mm/yyyy")
         cal.pack()
         Button(popup, text="Selecionar", command=lambda: selecionar_data(cal.get_date(), entry_data_fim, popup)).pack()
 
@@ -147,6 +147,65 @@ def main():
         entry.delete(0, tk.END)
         entry.insert(0, data)
         popup.destroy()
+
+    def filtrar_vendas():
+        nome_filtro = entry_nome.get().lower()
+        data_inicio_filtro = entry_data_inicio.get()
+        data_fim_filtro = entry_data_fim.get()
+        frete_filtro = combo_frete.get()
+        pago_sim_filtro = pago_sim_var.get()
+        pago_nao_filtro = pago_nao_var.get()
+
+        dados_filtrados = []
+        for venda in dados_iniciais:
+            nome = venda[2].lower() if venda[2] else ""
+            data = venda[1] if venda[1] else ""  
+            frete = venda[10] if venda[10] else ""
+            pago = venda[8] if venda[8] else ""
+
+            # Filtro por nome
+            if nome_filtro and nome_filtro not in nome:
+                continue
+
+            # Filtro por data
+            try:
+                if data_inicio_filtro and data_fim_filtro:  # Intervalo de data
+                    data_inicio = datetime.strptime(data_inicio_filtro, "%d/%m/%Y").date()
+                    data_fim = datetime.strptime(data_fim_filtro, "%d/%m/%Y").date()
+                    if data:
+                        data_venda = datetime.strptime(data, "%d/%m/%Y").date() #convert to date.
+                        if not (data_inicio <= data_venda <= data_fim):
+                            continue
+                elif data_inicio_filtro:  # Data de início até hoje
+                    data_inicio = datetime.strptime(data_inicio_filtro, "%d/%m/%Y").date()
+                    data_fim = datetime.today().date()
+                    if data:
+                        data_venda = datetime.strptime(data, "%d/%m/%Y").date() #convert to date.
+                        if not (data_inicio <= data_venda <= data_fim):
+                            continue
+                elif data_fim_filtro:  # Início até data de fim
+                    data_fim = datetime.strptime(data_fim_filtro, "%d/%m/%Y").date()
+                    if data:
+                        data_venda = datetime.strptime(data, "%d/%m/%Y").date() #convert to date.
+                        if data_venda > data_fim:
+                            continue
+            except ValueError:
+                print(f"Erro ao converter data: {data} ou {data_inicio_filtro} ou {data_fim_filtro}")
+                continue
+
+            # Filtro por frete
+            if frete_filtro != "Todos" and frete_filtro != frete:
+                continue
+
+            # Filtro por pago
+            if pago_sim_filtro and pago != "Sim":
+                continue
+            if pago_nao_filtro and pago != "Não":
+                continue
+
+            dados_filtrados.append(venda)
+
+        exibir_dados_vendas(dados_filtrados)
 
     tk.Label(frame_filtros, text="Data Início:").grid(row=0, column=2)
     entry_data_inicio = tk.Entry(frame_filtros)
@@ -160,17 +219,22 @@ def main():
 
     # Filtro Frete
     tk.Label(frame_filtros, text="Frete:").grid(row=1, column=0)
-    opcoes_frete = ["Todos"] + list(set([venda[9] for venda in carregar_dados_vendas() if venda[9]]))
+    opcoes_frete = ["Todos"] + list(set([venda[10] for venda in carregar_dados_vendas() if venda[9]]))
     combo_frete = ttk.Combobox(frame_filtros, values=opcoes_frete)
     combo_frete.grid(row=1, column=1)
     combo_frete.current(0)  # Seleciona "Todos" por padrão
 
     # Filtro Pago
     tk.Label(frame_filtros, text="Pago:").grid(row=1, column=2)
-    check_pago_sim = tk.Checkbutton(frame_filtros, text="Sim")
+    pago_sim_var = tk.IntVar()  # Variável para o Checkbutton "Sim"
+    pago_nao_var = tk.IntVar()  # Variável para o Checkbutton "Não"
+    check_pago_sim = tk.Checkbutton(frame_filtros, text="Sim", variable=pago_sim_var)
     check_pago_sim.grid(row=1, column=3)
-    check_pago_nao = tk.Checkbutton(frame_filtros, text="Não")
+    check_pago_nao = tk.Checkbutton(frame_filtros, text="Não", variable=pago_nao_var)
     check_pago_nao.grid(row=1, column=4)
+
+    btn_filtrar = tk.Button(frame_filtros, text="Filtrar", command=filtrar_vendas)
+    btn_filtrar.grid(row=2, column=0, columnspan=4, pady=10)    
 
     # Relatório de Vendas (Treeview)
     colunas_vendas = ("Data", "Nome", "Peças", "Valor", "1ª Peça", "Haver", "Total Sacolinha", "Pago", "Tipo de pagamento", "Frete", "Adendo")
