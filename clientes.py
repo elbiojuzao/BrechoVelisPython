@@ -1,13 +1,13 @@
 import tkinter as tk
 from tkinter import ttk
-from tkinter import Toplevel
+from tkinter import Toplevel, messagebox, Button 
 import sqlite3
 import json
-import os
+from datetime import datetime
 
 def main():
     nova_janela = tk.Toplevel()
-    nova_janela.title("Clientes") #alterado
+    nova_janela.title("Clientes") 
 
     # Carregar configurações ou definir padrão para a janela de Clientes
     configuracoes = carregar_configuracoes()
@@ -82,6 +82,99 @@ def main():
 
         exibir_dados_clientes(dados_filtrados)
 
+    def editar_cliente(event):
+        item = treeview_clientes.selection()[0]
+        cliente = treeview_clientes.item(item, 'values')
+
+        popup = Toplevel(nova_janela)
+        popup.title("Editar Cliente")
+
+        # Obter coordenadas do cursor
+        x = event.x_root
+        y = event.y_root
+
+        # Posicionar o popup nas coordenadas do cursor
+        popup.geometry(f"+{x}+{y}")
+
+        # Campos editáveis
+        tk.Label(popup, text="Nome:").grid(row=0, column=0)
+        entry_nome = tk.Entry(popup)
+        entry_nome.grid(row=0, column=1)
+        entry_nome.insert(0, cliente[0])
+
+        tk.Label(popup, text="CEP:").grid(row=1, column=0)
+        entry_cep = tk.Entry(popup)
+        entry_cep.grid(row=1, column=1)
+        entry_cep.insert(0, cliente[1])
+
+        tk.Label(popup, text="Nome Completo:").grid(row=2, column=0)
+        entry_nome_completo = tk.Entry(popup)
+        entry_nome_completo.grid(row=2, column=1)
+        entry_nome_completo.insert(0, cliente[2])
+
+        tk.Label(popup, text="Telefone:").grid(row=3, column=0)
+        entry_celular = tk.Entry(popup)
+        entry_celular.grid(row=3, column=1)
+        entry_celular.insert(0, cliente[3])
+
+        tk.Label(popup, text="Email:").grid(row=4, column=0)
+        entry_email = tk.Entry(popup)
+        entry_email.grid(row=4, column=1)
+        entry_email.insert(0, cliente[4])
+
+        tk.Label(popup, text="CPF:").grid(row=5, column=0)
+        entry_cpf = tk.Entry(popup)
+        entry_cpf.grid(row=5, column=1)
+        entry_cpf.insert(0, cliente[5])
+
+        tk.Label(popup, text="Rua:").grid(row=6, column=0)
+        entry_rua = tk.Entry(popup)
+        entry_rua.grid(row=6, column=1)
+        entry_rua.insert(0, cliente[6])
+
+        tk.Label(popup, text="Número:").grid(row=7, column=0)
+        entry_numero = tk.Entry(popup)
+        entry_numero.grid(row=7, column=1)
+        entry_numero.insert(0, cliente[7])
+
+        tk.Label(popup, text="Complemento:").grid(row=8, column=0)
+        entry_complemento = tk.Entry(popup)
+        entry_complemento.grid(row=8, column=1)
+        entry_complemento.insert(0, cliente[8])
+
+        tk.Label(popup, text="Bairro:").grid(row=9, column=0)
+        entry_bairro = tk.Entry(popup)
+        entry_bairro.grid(row=9, column=1)
+        entry_bairro.insert(0, cliente[9])
+
+        tk.Label(popup, text="Cidade:").grid(row=10, column=0)
+        entry_cidade = tk.Entry(popup)
+        entry_cidade.grid(row=10, column=1)
+        entry_cidade.insert(0, cliente[10])
+
+        def salvar_alteracoes_cliente():
+            conexao = conectar_banco_dados()
+            if conexao:
+                try:
+                        cursor = conexao.cursor()
+                        data_hora_modificacao = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                        # Recupera o id do cliente pelo nome
+                        cursor.execute("SELECT id FROM clientes WHERE nome=?", (cliente[0],))
+                        id_cliente = cursor.fetchone()[0]
+                        cursor.execute("UPDATE clientes SET nome=?, cep=?, nome_completo=?, Celular=?, Email=?, CPF=?, Rua=?, num=?, Complemento=?, Bairro=?, Cidade=?, data_hora_modificacao=? WHERE id=?",
+                            (entry_nome.get(), entry_cep.get(), entry_nome_completo.get(), entry_celular.get(), entry_email.get(), entry_cpf.get(), entry_rua.get(), entry_numero.get(), entry_complemento.get(), entry_bairro.get(), entry_cidade.get(), data_hora_modificacao, id_cliente))
+                        conexao.commit()
+                        desconectar_banco_dados(conexao)
+                        dados_atualizados = carregar_dados_clientes()
+                        exibir_dados_clientes(dados_atualizados)
+                        popup.destroy()
+                except sqlite3.Error as erro:
+                    messagebox.showerror("Erro", f"Erro ao atualizar cliente: {erro}")
+            else:
+                messagebox.showerror("Erro", "Não foi possível conectar ao banco de dados.")
+
+        Button(popup, text="Salvar", command=salvar_alteracoes_cliente).grid(row=11, column=0, columnspan=2)
+
     # Filtros
     filtro_frame = tk.Frame(nova_janela)
     filtro_frame.grid(row=0, column=0, columnspan=4, padx=10, pady=10)
@@ -109,6 +202,7 @@ def main():
     # Relatório de Clientes (Treeview)
     colunas_clientes = ("nome", "cep", "nome_completo", "celular", "email", "cpf", "rua", "numero", "complemento", "bairro", "cidade")
     treeview_clientes = ttk.Treeview(nova_janela, columns=colunas_clientes, show="headings")
+    treeview_clientes.bind("<Button-3>", editar_cliente) 
     for coluna in colunas_clientes:
         treeview_clientes.heading(coluna, text=coluna)
         treeview_clientes.column(coluna, width=100)

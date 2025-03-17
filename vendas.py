@@ -7,7 +7,10 @@ from tkinter import filedialog, messagebox, Toplevel, Button
 from tkcalendar import Calendar
 from datetime import datetime
 
+popup_edicao_aberto = None
+
 def main():
+    global popup_edicao_aberto 
     nova_janela = tk.Toplevel()
     nova_janela.title("Vendas")
 
@@ -49,20 +52,39 @@ def main():
         for item in treeview_vendas.get_children():
             treeview_vendas.delete(item)
         for venda in dados_vendas:
-            venda_tratada = []
-            for valor in (venda[1], venda[2], venda[3], venda[4], venda[5], venda[6], venda[7], venda[8], venda[9], venda[10], venda[11]):
-                if valor is None:
-                    venda_tratada.append("")  # Substitui None por ""
-                else:
-                    venda_tratada.append(valor)
-            if venda_tratada[7] == "Não":  # Vermelho (prioridade máxima)
-                treeview_vendas.insert("", tk.END, values=venda_tratada, tags=("pago_nao",))
-            elif venda_tratada[9] == "Enviado" or venda_tratada[9] == "Em mãos" or venda_tratada[9] == "DOAÇÃO":  # Roxo
-                treeview_vendas.insert("", tk.END, values=venda_tratada, tags=("roxo_claro",))
-            elif venda_tratada[9] == "Embalar":  # Amarelo
-                treeview_vendas.insert("", tk.END, values=venda_tratada, tags=("amarelo_claro",))
-            elif venda_tratada[7] == "Sim":  # Verde
-                treeview_vendas.insert("", tk.END, values=venda_tratada, tags=("pago_sim",))
+            data = venda[1] if venda[1] else ""
+            nome = venda[2] if venda[2] else ""
+            pecas = venda[3] if venda[3] is not None else ""
+            valor = "R$ " + str(venda[4]) if venda[4] is not None else ""
+            primeira_peca = venda[5] if venda[5] is not None else ""
+            haver = "R$ " + str(venda[6]) if venda[6] is not None else ""
+            total_sacolinha = "R$ " + str(venda[7]) if venda[7] is not None else ""
+            pago = venda[8] if venda[8] else ""
+            tipo_pagamento = venda[9] if venda[9] else ""
+            frete = venda[10] if venda[10] else ""
+            adendo = venda[11] if venda[11] else ""
+
+            venda_tratada = [data, nome, pecas, valor, primeira_peca, haver, total_sacolinha, pago, tipo_pagamento, frete, adendo]
+
+            if pago == "Não":
+                treeview_vendas.insert("", tk.END, values=venda_tratada, tags=("pago_nao",))  # Vermelho
+            elif frete in ("Enviado", "Em mãos", "DOAÇÃO"):
+                treeview_vendas.insert("", tk.END, values=venda_tratada, tags=("roxo_claro",))  # Roxo
+            elif frete == "Embalar":
+                treeview_vendas.insert("", tk.END, values=venda_tratada, tags=("amarelo_claro",))  # Amarelo
+            elif pago == "Sim":
+                treeview_vendas.insert("", tk.END, values=venda_tratada, tags=("pago_sim",))  # Verde
+
+         # Ajustar a largura das colunas ao conteúdo
+        nova_janela.update_idletasks()
+        for col in colunas_vendas:
+            treeview_vendas.column(col, width=tk.font.Font().measure(col), stretch=False)
+            for item in treeview_vendas.get_children():
+                try:
+                    cell_value = treeview_vendas.set(item, col)
+                    treeview_vendas.column(col, width=max(treeview_vendas.column(col, 'width'), tk.font.Font().measure(cell_value)), stretch=False)
+                except tk.TclError:
+                    pass # Lidar com itens que podem ter menos colunas
 
     def importar_compras():
         arquivo_csv = filedialog.askopenfilename(filetypes=[("Arquivos CSV", "*.csv")])
@@ -158,8 +180,8 @@ def main():
 
         dados_filtrados = []
         for venda in dados_iniciais:
+            data = venda[1] if venda[1] else ""
             nome = venda[2].lower() if venda[2] else ""
-            data = venda[1] if venda[1] else ""  
             frete = venda[10] if venda[10] else ""
             pago = venda[8] if venda[8] else ""
 
@@ -207,38 +229,152 @@ def main():
 
         exibir_dados_vendas(dados_filtrados)
 
+    def editar_venda(event):
+        global popup_edicao_aberto
+        if popup_edicao_aberto is not None and popup_edicao_aberto.winfo_exists():
+            messagebox.showerror("Erro", "Você já está editando outra venda. Por favor, finalize ou cancele a edição atual.")
+            popup_edicao_aberto.lift()  # Trazer a janela de edição para frente
+            return
+        item = treeview_vendas.selection()[0]
+        venda = treeview_vendas.item(item, 'values')
+
+        popup = Toplevel(nova_janela)
+        popup_edicao_aberto = popup
+        popup.title("Editar Venda")
+
+        # Obter coordenadas do cursor
+        x = event.x_root
+        y = event.y_root
+
+        # Posicionar o popup nas coordenadas do cursor
+        popup.geometry(f"+{x}+{y}")
+
+        # Nome do cliente (apenas leitura)
+        tk.Label(popup, text="Nome do Cliente:").grid(row=0, column=0)
+        tk.Label(popup, text=venda[1]).grid(row=0, column=1)
+
+        # Peças (editável)
+        tk.Label(popup, text="Peças:").grid(row=1, column=0)
+        entry_pecas = tk.Entry(popup)
+        entry_pecas.grid(row=1, column=1)
+        entry_pecas.insert(0, venda[2])
+
+        # Valor (editável)
+        tk.Label(popup, text="Valor:").grid(row=2, column=0)
+        entry_valor = tk.Entry(popup)
+        entry_valor.grid(row=2, column=1)
+        entry_valor.insert(0, venda[3]) # Removido "R$ " para edição numérica
+        entry_valor.configure(state="normal") # Permite edição
+
+        # Haver (editável)
+        tk.Label(popup, text="Haver:").grid(row=3, column=0)
+        entry_haver = tk.Entry(popup)
+        entry_haver.grid(row=3, column=1)
+        entry_haver.insert(0, venda[5]) # Removido "R$ " para edição numérica
+        entry_haver.configure(state="normal")
+
+        # Total Sacolinha (editável)
+        tk.Label(popup, text="Total Sacolinha:").grid(row=4, column=0)
+        entry_total_sacolinha = tk.Entry(popup)
+        entry_total_sacolinha.grid(row=4, column=1)
+        entry_total_sacolinha.insert(0, venda[6]) # Removido "R$ " para edição numérica
+        entry_total_sacolinha.configure(state="normal")
+
+        # Pago (editável)
+        tk.Label(popup, text="Pago:").grid(row=5, column=0)
+        combo_pago = ttk.Combobox(popup, values=["Sim", "Não"])
+        combo_pago.grid(row=5, column=1)
+        combo_pago.set(venda[7])
+
+        # Tipo de pagamento (editável)
+        tk.Label(popup, text="Tipo de Pagamento:").grid(row=6, column=0)
+        opcoes_pagamento = list(set([venda[9] for venda in carregar_dados_vendas() if venda[9]]))
+        combo_tipo_pagamento = ttk.Combobox(popup, values=opcoes_pagamento)
+        combo_tipo_pagamento.grid(row=6, column=1)
+        combo_tipo_pagamento.set(venda[8])
+
+        # Adendo (editável)
+        tk.Label(popup, text="Adendo:").grid(row=7, column=0)
+        text_adendo = tk.Text(popup, height=4, width=30)
+        text_adendo.grid(row=7, column=1)
+        text_adendo.insert(tk.END, venda[10])
+
+        def ao_fechar_popup_edicao():
+            global popup_edicao_aberto 
+            popup_edicao_aberto = None
+            popup.destroy()
+
+        popup.protocol("WM_DELETE_WINDOW", ao_fechar_popup_edicao)
+
+        def salvar_alteracoes():
+            # Validação do campo Peças
+            if not entry_pecas.get() or not entry_pecas.get().isdigit() or int(entry_pecas.get()) < 1:
+                messagebox.showerror("Erro", "O campo Peças deve conter no mínimo 1 peça (valor numérico).")
+                return
+
+            # Obter valores dos campos
+            pecas = entry_pecas.get()
+            valor = entry_valor.get().replace("R$ ", "")
+            haver = entry_haver.get().replace("R$ ", "")
+            total_sacolinha = entry_total_sacolinha.get().replace("R$ ", "")
+            adendo = text_adendo.get("1.0", tk.END).strip()
+
+            conexao = conectar_banco_dados()
+            if conexao:
+                try:
+                    cursor = conexao.cursor()
+                    cursor.execute("UPDATE vendas SET peca=?, valor=?, haver=?, total_sacolinha=?, pago=?, tipo_pagamento=?, adendo=? WHERE data=? AND nome=?",
+                                   (pecas, valor, haver, total_sacolinha, combo_pago.get(), combo_tipo_pagamento.get(), adendo, venda[0], venda[1]))
+                    conexao.commit()
+                    desconectar_banco_dados(conexao)
+                    dados_atualizados = carregar_dados_vendas()
+                    exibir_dados_vendas(dados_atualizados)
+                    ao_fechar_popup_edicao()
+                except sqlite3.Error as erro:
+                    messagebox.showerror("Erro", f"Erro ao atualizar venda: {erro}")
+                finally:
+                    ao_fechar_popup_edicao()
+
+            else:
+                messagebox.showerror("Erro", "Não foi possível conectar ao banco de dados.")
+
+        Button(popup, text="Salvar", command=salvar_alteracoes).grid(row=10, column=0, columnspan=2, pady=10)
+        Button(popup, text="Cancelar", command=ao_fechar_popup_edicao).grid(row=11, column=0, columnspan=2, pady=5)
+
     tk.Label(frame_filtros, text="Data Início:").grid(row=0, column=2)
     entry_data_inicio = tk.Entry(frame_filtros)
     entry_data_inicio.grid(row=0, column=3)
-    entry_data_inicio.bind("<Button-1>", abrir_calendario_inicio)  # Adiciona evento de clique
+    entry_data_inicio.bind("<Button-1>", abrir_calendario_inicio)  
 
     tk.Label(frame_filtros, text="Data Fim:").grid(row=0, column=5)
     entry_data_fim = tk.Entry(frame_filtros)
     entry_data_fim.grid(row=0, column=6)
-    entry_data_fim.bind("<Button-1>", abrir_calendario_fim)  # Adiciona evento de clique
+    entry_data_fim.bind("<Button-1>", abrir_calendario_fim)
 
     # Filtro Frete
     tk.Label(frame_filtros, text="Frete:").grid(row=1, column=0)
     opcoes_frete = ["Todos"] + list(set([venda[10] for venda in carregar_dados_vendas() if venda[9]]))
     combo_frete = ttk.Combobox(frame_filtros, values=opcoes_frete)
     combo_frete.grid(row=1, column=1)
-    combo_frete.current(0)  # Seleciona "Todos" por padrão
+    combo_frete.current(0) 
 
     # Filtro Pago
     tk.Label(frame_filtros, text="Pago:").grid(row=1, column=2)
-    pago_sim_var = tk.IntVar()  # Variável para o Checkbutton "Sim"
-    pago_nao_var = tk.IntVar()  # Variável para o Checkbutton "Não"
+    pago_sim_var = tk.IntVar()  
+    pago_nao_var = tk.IntVar()  
     check_pago_sim = tk.Checkbutton(frame_filtros, text="Sim", variable=pago_sim_var)
     check_pago_sim.grid(row=1, column=3)
     check_pago_nao = tk.Checkbutton(frame_filtros, text="Não", variable=pago_nao_var)
     check_pago_nao.grid(row=1, column=4)
 
     btn_filtrar = tk.Button(frame_filtros, text="Filtrar", command=filtrar_vendas)
-    btn_filtrar.grid(row=2, column=0, columnspan=4, pady=10)    
+    btn_filtrar.grid(row=0, column=7, rowspan=2, padx=10) 
+    btn_filtrar.config(width=10, height=2)  
 
     # Relatório de Vendas (Treeview)
     colunas_vendas = ("Data", "Nome", "Peças", "Valor", "1ª Peça", "Haver", "Total Sacolinha", "Pago", "Tipo de pagamento", "Frete", "Adendo")
     treeview_vendas = ttk.Treeview(nova_janela, columns=colunas_vendas, show="headings")
+    treeview_vendas.bind("<Button-3>", editar_venda)
     for coluna in colunas_vendas:
         treeview_vendas.heading(coluna, text=coluna)
         treeview_vendas.column(coluna, width=100)
