@@ -3,6 +3,7 @@ from tkinter import ttk
 from tkinter import Toplevel
 import json
 import os
+from utils import salvar_configuracoes_janela, carregar_configuracoes
 
 def main():
     nova_janela = tk.Toplevel()
@@ -49,26 +50,7 @@ def main():
     treeview_fretes.grid(row=4, column=0, columnspan=3, padx=10, pady=10)
 
     # Salvar configurações ao fechar a janela de Fretes
-    nova_janela.protocol("WM_DELETE_WINDOW", lambda: (salvar_configuracoes_fretes(nova_janela), nova_janela.destroy()))
-
-def salvar_configuracoes_fretes(janela):
-    configuracoes = carregar_configuracoes() or {}
-    configuracoes["fretes"] = {
-        "x": janela.winfo_x(),
-        "y": janela.winfo_y(),
-        "largura": janela.winfo_width(),
-        "altura": janela.winfo_height()
-    }
-    with open("configuracoes.json", "w") as arquivo:
-        json.dump(configuracoes, arquivo)
-
-def carregar_configuracoes():
-    try:
-        with open("configuracoes.json", "r") as arquivo:
-            configuracoes = json.load(arquivo)
-            return configuracoes
-    except FileNotFoundError:
-        return None
+    nova_janela.protocol("WM_DELETE_WINDOW", lambda: (salvar_configuracoes_janela(nova_janela, "fretes"), nova_janela.destroy()))
 
 if __name__ == "__main__":
     main()

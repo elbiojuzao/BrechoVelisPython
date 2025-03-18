@@ -6,6 +6,7 @@ import csv
 from tkinter import filedialog, messagebox, Toplevel, Button
 from tkcalendar import Calendar
 from datetime import datetime
+from utils import conectar_banco_dados, desconectar_banco_dados, carregar_configuracoes, salvar_configuracoes_janela
 
 popup_edicao_aberto = None
 
@@ -21,31 +22,19 @@ def main():
     else:
         nova_janela.geometry("1100x600")
 
-    def conectar_banco_dados():
-        try:
-            conexao = sqlite3.connect("brechoVelis.db")
-            return conexao
-        except sqlite3.Error as erro:
-            print("Erro ao conectar ao banco de dados:", erro)
-            return None
-
-    def desconectar_banco_dados(conexao):
-        if conexao:
-            conexao.close()
-
     def carregar_dados_vendas():
         conexao = conectar_banco_dados()
-        if conexao:
-            try:
-                cursor = conexao.cursor()
-                cursor.execute("SELECT * FROM vendas")
-                dados_vendas = cursor.fetchall()
-                desconectar_banco_dados(conexao)
-                return dados_vendas
-            except sqlite3.Error as erro:
-                print("Erro na consulta SQL:", erro)
-                return []
-        else:
+        if not conexao:
+            return []
+        
+        try:
+            cursor = conexao.cursor()
+            cursor.execute("SELECT * FROM vendas")
+            dados_vendas = cursor.fetchall()
+            desconectar_banco_dados(conexao)
+            return dados_vendas
+        except sqlite3.Error as erro:
+            print("Erro na consulta SQL:", erro)
             return []
 
     def exibir_dados_vendas(dados_vendas):
@@ -88,50 +77,51 @@ def main():
 
     def importar_compras():
         arquivo_csv = filedialog.askopenfilename(filetypes=[("Arquivos CSV", "*.csv")])
-        if arquivo_csv:
-            conexao = conectar_banco_dados()
-            if conexao:
-                try:
-                    cursor = conexao.cursor()
-                    linhas_importadas = 0
-                    linhas_falhas = 0
-                    with open(arquivo_csv, "r", newline="", encoding="windows-1252") as arquivo:
-                        leitor_csv = csv.reader(arquivo, delimiter=";")  # Especifica o separador como ponto e vírgula
-                        next(leitor_csv)  # Ignora o cabeçalho
-                        for linha in leitor_csv:
-                            if len(linha) < 11:
-                                print(f"Linha incompleta: {linha}")
-                                linhas_falhas += 1
-                                continue
-
-                            data = linha[0] if linha[0] else None
-                            nome = linha[1] if linha[1] else None
-                            pecas = linha[2] if linha[2] else None
-                            valor = linha[3] if linha[3] else None
-                            primeira_peca = linha[4] if len(linha) > 4 and linha[4] else None  # Verifica se o índice 4 existe
-                            haver = linha[5] if linha[5] else None
-                            total_sacolinha = linha[6] if linha[6] else None
-                            pago = linha[7] if linha[7] else None
-                            tipo_pagamento = linha[8] if linha[8] else None
-                            frete = linha[9] if linha[9] else None
-                            adendo = linha[10] if linha[10] else None
-                            try:
-                                cursor.execute("INSERT INTO vendas (data, nome, peca, valor, primeira_peca, haver, total_sacolinha, pago, tipo_pagamento, frete, adendo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (data, nome, pecas, valor, primeira_peca, haver, total_sacolinha, pago, tipo_pagamento, frete, adendo))
-                                linhas_importadas += 1
-                            except sqlite3.Error as erro:
-                                print(f"Erro ao inserir linha: {linha}, Erro: {erro}")
-                                linhas_falhas += 1
-                    conexao.commit()
-                    desconectar_banco_dados(conexao)
-                    dados_atualizados = carregar_dados_vendas()
-                    exibir_dados_vendas(dados_atualizados)
-                    messagebox.showinfo("Sucesso", f"Compras importadas: {linhas_importadas}\nCompras não importadas: {linhas_falhas}")
-                except sqlite3.Error as erro:
-                    messagebox.showerror("Erro", f"Erro ao importar dados: {erro}")
-            else:
-                messagebox.showerror("Erro", "Não foi possível conectar ao banco de dados.")
-        else:
+        if not arquivo_csv:
             messagebox.showerror("Erro", "Nenhum arquivo CSV selecionado.")
+
+        conexao = conectar_banco_dados()
+        if not conexao:
+                messagebox.showerror("Erro", "Não foi possível conectar ao banco de dados.")
+
+        try:
+            cursor = conexao.cursor()
+            linhas_importadas = 0
+            linhas_falhas = 0
+            with open(arquivo_csv, "r", newline="", encoding="windows-1252") as arquivo:
+                leitor_csv = csv.reader(arquivo, delimiter=";")  # Especifica o separador como ponto e vírgula
+                next(leitor_csv)  # Ignora o cabeçalho
+                for linha in leitor_csv:
+                    if len(linha) < 11:
+                        print(f"Linha incompleta: {linha}")
+                        linhas_falhas += 1
+                        continue
+
+                    data = linha[0] if linha[0] else None
+                    nome = linha[1] if linha[1] else None
+                    pecas = linha[2] if linha[2] else None
+                    valor = linha[3] if linha[3] else None
+                    primeira_peca = linha[4] if len(linha) > 4 and linha[4] else None  # Verifica se o índice 4 existe
+                    haver = linha[5] if linha[5] else None
+                    total_sacolinha = linha[6] if linha[6] else None
+                    pago = linha[7] if linha[7] else None
+                    tipo_pagamento = linha[8] if linha[8] else None
+                    frete = linha[9] if linha[9] else None
+                    adendo = linha[10] if linha[10] else None
+                    try:
+                        cursor.execute("INSERT INTO vendas (data, nome, peca, valor, primeira_peca, haver, total_sacolinha, pago, tipo_pagamento, frete, adendo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (data, nome, pecas, valor, primeira_peca, haver, total_sacolinha, pago, tipo_pagamento, frete, adendo))
+                        linhas_importadas += 1
+                    except sqlite3.Error as erro:
+                        print(f"Erro ao inserir linha: {linha}, Erro: {erro}")
+                        linhas_falhas += 1
+            conexao.commit()
+            desconectar_banco_dados(conexao)
+            dados_atualizados = carregar_dados_vendas()
+            exibir_dados_vendas(dados_atualizados)
+            messagebox.showinfo("Sucesso", f"Compras importadas: {linhas_importadas}\nCompras não importadas: {linhas_falhas}")
+        except sqlite3.Error as erro:
+            messagebox.showerror("Erro", f"Erro ao importar dados: {erro}")
+               
 
     # Botão Importar Compras no topo
     botao_importar = tk.Button(nova_janela, text="Importar Compras", command=importar_compras)
@@ -320,23 +310,22 @@ def main():
             adendo = text_adendo.get("1.0", tk.END).strip()
 
             conexao = conectar_banco_dados()
-            if conexao:
-                try:
-                    cursor = conexao.cursor()
-                    cursor.execute("UPDATE vendas SET peca=?, valor=?, haver=?, total_sacolinha=?, pago=?, tipo_pagamento=?, adendo=? WHERE data=? AND nome=?",
-                                   (pecas, valor, haver, total_sacolinha, combo_pago.get(), combo_tipo_pagamento.get(), adendo, venda[0], venda[1]))
-                    conexao.commit()
-                    desconectar_banco_dados(conexao)
-                    dados_atualizados = carregar_dados_vendas()
-                    exibir_dados_vendas(dados_atualizados)
-                    ao_fechar_popup_edicao()
-                except sqlite3.Error as erro:
-                    messagebox.showerror("Erro", f"Erro ao atualizar venda: {erro}")
-                finally:
-                    ao_fechar_popup_edicao()
-
-            else:
+            if not conexao:
                 messagebox.showerror("Erro", "Não foi possível conectar ao banco de dados.")
+            
+            try:
+                cursor = conexao.cursor()
+                cursor.execute("UPDATE vendas SET peca=?, valor=?, haver=?, total_sacolinha=?, pago=?, tipo_pagamento=?, adendo=? WHERE data=? AND nome=?",
+                                (pecas, valor, haver, total_sacolinha, combo_pago.get(), combo_tipo_pagamento.get(), adendo, venda[0], venda[1]))
+                conexao.commit()
+                desconectar_banco_dados(conexao)
+                dados_atualizados = carregar_dados_vendas()
+                exibir_dados_vendas(dados_atualizados)
+                ao_fechar_popup_edicao()
+            except sqlite3.Error as erro:
+                messagebox.showerror("Erro", f"Erro ao atualizar venda: {erro}")
+            finally:
+                ao_fechar_popup_edicao()
 
         Button(popup, text="Salvar", command=salvar_alteracoes).grid(row=10, column=0, columnspan=2, pady=10)
         Button(popup, text="Cancelar", command=ao_fechar_popup_edicao).grid(row=11, column=0, columnspan=2, pady=5)
@@ -389,26 +378,7 @@ def main():
     exibir_dados_vendas(dados_iniciais)
 
     # Salvar configurações ao fechar a janela de Vendas
-    nova_janela.protocol("WM_DELETE_WINDOW", lambda: (salvar_configuracoes_vendas(nova_janela), nova_janela.destroy()))
-
-def salvar_configuracoes_vendas(janela):
-    configuracoes = carregar_configuracoes() or {}
-    configuracoes["vendas"] = {
-        "x": janela.winfo_x(),
-        "y": janela.winfo_y(),
-        "largura": janela.winfo_width(),
-        "altura": janela.winfo_height()
-    }
-    with open("configuracoes.json", "w") as arquivo:
-        json.dump(configuracoes, arquivo)
-
-def carregar_configuracoes():
-    try:
-        with open("configuracoes.json", "r") as arquivo:
-            configuracoes = json.load(arquivo)
-            return configuracoes
-    except FileNotFoundError:
-        return None
+    nova_janela.protocol("WM_DELETE_WINDOW", lambda: (salvar_configuracoes_janela(nova_janela, "vendas"), nova_janela.destroy()))
 
 if __name__ == "__main__":
     main()

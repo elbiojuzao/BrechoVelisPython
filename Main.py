@@ -20,12 +20,10 @@ def abrir_clientes():
 def abrir_mensagens():
     mensagens.main()
 
-# Configuração da janela principal
 root = tk.Tk()
 root.title("Menu Principal")
 root.geometry("400x300")
 
-# Botões
 btn_dashboard = tk.Button(root, text="Dashboard", command=abrir_dashboard, width=20, height=2)
 btn_dashboard.pack(pady=10)
 
@@ -41,5 +39,4 @@ btn_clientes.pack(pady=10)
 btn_mensagens = tk.Button(root, text="Mensagens", command=abrir_mensagens, width=20, height=2)
 btn_mensagens.pack(pady=10)
 
-# Iniciar o loop da interface gráfica
 root.mainloop()

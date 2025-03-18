@@ -4,6 +4,7 @@ from tkinter import Toplevel, messagebox, Button
 import sqlite3
 import json
 from datetime import datetime
+from utils import conectar_banco_dados, desconectar_banco_dados, salvar_configuracoes_janela, carregar_configuracoes
 
 def main():
     nova_janela = tk.Toplevel()
@@ -16,32 +17,21 @@ def main():
     else:
         nova_janela.geometry("1250x600")
 
-    def conectar_banco_dados():
-        try:
-            conexao = sqlite3.connect("brechoVelis.db")
-            return conexao
-        except sqlite3.Error as erro:
-            print("Erro ao conectar ao banco de dados:", erro)
-            return None
-
-    def desconectar_banco_dados(conexao):
-        if conexao:
-            conexao.close()
-
     def carregar_dados_clientes():
         conexao = conectar_banco_dados()
-        if conexao:
-            try:
-                cursor = conexao.cursor()
-                cursor.execute("SELECT * FROM clientes")
-                dados_clientes = cursor.fetchall()
-                desconectar_banco_dados(conexao)
-                return dados_clientes
-            except sqlite3.Error as erro:
-                print("Erro na consulta SQL:", erro)
-                return []
-        else:
+        if not conexao:
             return []
+    
+        try:
+            cursor = conexao.cursor()
+            cursor.execute("SELECT * FROM clientes")
+            dados_clientes = cursor.fetchall()
+            desconectar_banco_dados(conexao)
+            return dados_clientes
+        except sqlite3.Error as erro:
+            print("Erro na consulta SQL:", erro)
+            return []
+            
 
     def exibir_dados_clientes(dados_clientes):
         for item in treeview_clientes.get_children():
@@ -154,24 +144,24 @@ def main():
 
         def salvar_alteracoes_cliente():
             conexao = conectar_banco_dados()
-            if conexao:
-                try:
-                        cursor = conexao.cursor()
-                        data_hora_modificacao = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                        # Recupera o id do cliente pelo nome
-                        cursor.execute("SELECT id FROM clientes WHERE nome=?", (cliente[0],))
-                        id_cliente = cursor.fetchone()[0]
-                        cursor.execute("UPDATE clientes SET nome=?, cep=?, nome_completo=?, Celular=?, Email=?, CPF=?, Rua=?, num=?, Complemento=?, Bairro=?, Cidade=?, data_hora_modificacao=? WHERE id=?",
-                            (entry_nome.get(), entry_cep.get(), entry_nome_completo.get(), entry_celular.get(), entry_email.get(), entry_cpf.get(), entry_rua.get(), entry_numero.get(), entry_complemento.get(), entry_bairro.get(), entry_cidade.get(), data_hora_modificacao, id_cliente))
-                        conexao.commit()
-                        desconectar_banco_dados(conexao)
-                        dados_atualizados = carregar_dados_clientes()
-                        exibir_dados_clientes(dados_atualizados)
-                        popup.destroy()
-                except sqlite3.Error as erro:
-                    messagebox.showerror("Erro", f"Erro ao atualizar cliente: {erro}")
-            else:
+            if not conexao:
                 messagebox.showerror("Erro", "Não foi possível conectar ao banco de dados.")
+
+            try:
+                    cursor = conexao.cursor()
+                    data_hora_modificacao = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                    # Recupera o id do cliente pelo nome
+                    cursor.execute("SELECT id FROM clientes WHERE nome=?", (cliente[0],))
+                    id_cliente = cursor.fetchone()[0]
+                    cursor.execute("UPDATE clientes SET nome=?, cep=?, nome_completo=?, Celular=?, Email=?, CPF=?, Rua=?, num=?, Complemento=?, Bairro=?, Cidade=?, data_hora_modificacao=? WHERE id=?",
+                        (entry_nome.get(), entry_cep.get(), entry_nome_completo.get(), entry_celular.get(), entry_email.get(), entry_cpf.get(), entry_rua.get(), entry_numero.get(), entry_complemento.get(), entry_bairro.get(), entry_cidade.get(), data_hora_modificacao, id_cliente))
+                    conexao.commit()
+                    desconectar_banco_dados(conexao)
+                    dados_atualizados = carregar_dados_clientes()
+                    exibir_dados_clientes(dados_atualizados)
+                    popup.destroy()
+            except sqlite3.Error as erro:
+                messagebox.showerror("Erro", f"Erro ao atualizar cliente: {erro}")
 
         Button(popup, text="Salvar", command=salvar_alteracoes_cliente).grid(row=11, column=0, columnspan=2)
 
@@ -213,26 +203,7 @@ def main():
     exibir_dados_clientes(dados_iniciais)
 
     # Salvar configurações ao fechar a janela de Clientes
-    nova_janela.protocol("WM_DELETE_WINDOW", lambda: (salvar_configuracoes_clientes(nova_janela), nova_janela.destroy())) #alterado
-
-def salvar_configuracoes_clientes(janela): #alterado
-    configuracoes = carregar_configuracoes() or {}
-    configuracoes["clientes"] = { #alterado
-        "x": janela.winfo_x(),
-        "y": janela.winfo_y(),
-        "largura": janela.winfo_width(),
-        "altura": janela.winfo_height()
-    }
-    with open("configuracoes.json", "w") as arquivo:
-        json.dump(configuracoes, arquivo)
-
-def carregar_configuracoes():
-    try:
-        with open("configuracoes.json", "r") as arquivo:
-            configuracoes = json.load(arquivo)
-            return configuracoes
-    except FileNotFoundError:
-        return None
+    nova_janela.protocol("WM_DELETE_WINDOW", lambda: (salvar_configuracoes_janela(nova_janela, "clientes"), nova_janela.destroy())) #alterado
 
 if __name__ == "__main__":
     main()
