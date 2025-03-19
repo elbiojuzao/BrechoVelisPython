@@ -25,6 +25,7 @@ def criar_tela_mensagens(root):
 
     tree_mensagens = ttk.Treeview(frame_principal, columns=("Detalhes", "Data", "Nome", "Peca", "Valor"))
     tree_mensagens.heading("#0", text="Detalhes")
+    tree_mensagens.heading("Detalhes", text="Detalhes")
     tree_mensagens.heading("Data", text="Data")
     tree_mensagens.heading("Nome", text="Nome")
     tree_mensagens.heading("Peca", text="Peca")
@@ -46,11 +47,27 @@ def filtrar_vendas(tree, dias, dias_fim=None):
         cursor = conexao.cursor()
         try:
             if data_fim:
-                cursor.execute("SELECT rowid, data, nome, peca, valor FROM vendas WHERE data BETWEEN ? AND ? AND pago = 'Sim' AND frete IN ('Espera', 'Embalar')",
-                               (data_fim.strftime('%Y-%m-%d'), data_inicio.strftime('%Y-%m-%d')))
+                cursor.execute("""
+                    SELECT
+                        nome,
+                        MAX(data) AS ultima_data,
+                        SUM(peca) AS total_pecas,
+                        SUM(valor) AS total_valor
+                    FROM vendas
+                    WHERE data BETWEEN ? AND ? AND pago = 'Sim' AND frete IN ('Espera', 'Embalar')
+                    GROUP BY nome
+                """, (data_fim.strftime('%Y-%m-%d'), data_inicio.strftime('%Y-%m-%d')))
             else:
-                cursor.execute("SELECT rowid, data, nome, peca, valor FROM vendas WHERE data <= ? AND pago = 'Sim' AND frete IN ('Espera', 'Embalar')",
-                               (data_inicio.strftime('%Y-%m-%d'),))
+                cursor.execute("""
+                    SELECT
+                        nome,
+                        MAX(data) AS ultima_data,
+                        SUM(peca) AS total_pecas,
+                        SUM(valor) AS total_valor
+                    FROM vendas
+                    WHERE data <= ? AND pago = 'Sim' AND frete IN ('Espera', 'Embalar')
+                    GROUP BY nome
+                """, (data_inicio.strftime('%Y-%m-%d'),))
             vendas = cursor.fetchall()
         except Exception as e:
             print(f"Erro ao executar a consulta: {e}")
@@ -67,7 +84,7 @@ def filtrar_vendas(tree, dias, dias_fim=None):
         except ValueError:
             print(f"Erro ao converter data: {venda[1]}")
             data_formatada = venda[1]  # Mantém a data original se a conversão falhar
-        tree.insert("", tk.END, values=("[Detalhes]", data_formatada, venda[2], venda[3], venda[4]))
+        tree.insert("", tk.END, values=("[Detalhes]", data_formatada, venda[0], venda[2], venda[3]))
 
     ajustar_colunas(tree)  # Chama a função para ajustar as colunas
 
