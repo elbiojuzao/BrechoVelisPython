@@ -18,7 +18,7 @@ def abrir_clientes():
     clientes.main()
 
 def abrir_mensagens():
-    mensagens.main()
+    mensagens.main(root)
 
 root = tk.Tk()
 root.title("Menu Principal")
