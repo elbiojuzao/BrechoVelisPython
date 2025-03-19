@@ -50,24 +50,26 @@ def filtrar_vendas(tree, dias, dias_fim=None):
             if data_fim:
                 cursor.execute("""
                     SELECT
-                        nome,
-                        MAX(data) AS ultima_data,
-                        SUM(peca) AS total_pecas,
-                        SUM(valor) AS total_valor
-                    FROM vendas
-                    WHERE data BETWEEN ? AND ? AND pago = 'Sim' AND frete IN ('Espera', 'Embalar')
-                    GROUP BY nome
+                        c.nome,
+                        MAX(v.data) AS ultima_data,
+                        SUM(v.peca) AS total_pecas,
+                        SUM(v.valor) AS total_valor
+                    FROM vendas v
+                    JOIN clientes c ON v.cliente_id = c.id
+                    WHERE v.data <= ? AND v.pago = 'Sim' AND v.frete IN ('Espera', 'Embalar')
+                    GROUP BY v.cliente_id
                 """, (data_fim.strftime('%Y-%m-%d'), data_inicio.strftime('%Y-%m-%d')))
             else:
                 cursor.execute("""
                     SELECT
-                        nome,
-                        MAX(data) AS ultima_data,
-                        SUM(peca) AS total_pecas,
-                        SUM(valor) AS total_valor
-                    FROM vendas
-                    WHERE data <= ? AND pago = 'Sim' AND frete IN ('Espera', 'Embalar')
-                    GROUP BY nome
+                        c.nome,
+                        MAX(v.data) AS ultima_data,
+                        SUM(v.peca) AS total_pecas,
+                        SUM(v.valor) AS total_valor
+                    FROM vendas v
+                    JOIN clientes c ON v.cliente_id = c.id
+                    WHERE v.data <= ? AND v.pago = 'Sim' AND v.frete IN ('Espera', 'Embalar')
+                    GROUP BY v.cliente_id
                 """, (data_inicio.strftime('%Y-%m-%d'),))
             vendas = cursor.fetchall()
         except Exception as e:
