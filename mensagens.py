@@ -115,14 +115,21 @@ def enviar_mensagem_whatsapp(cliente_id, dias, dias_fim):
                 nome, telefone = resultado
                 if dias_fim:
                     mensagem = f"Olá {nome}, tudo bem?\nEstamos passando para lembrar que você possui sacolinhas próximo dos 30 dias conosco, antes de fazer o envio venha aproveitar nossa live, assim pode levar mais peças e seu frete pode ficar um pouco mais em conta ;D"
-                elif dias > 30 and dias <= 90:
+                    url = f"https://api.whatsapp.com/send?phone=55{telefone}&text={mensagem}"
+                    webbrowser.open(url)
+                elif dias == 30:
                     mensagem = f"Olá {nome}, tudo bem?\nEstamos passando para lembrar que você possui sacolinhas com mais de 30 dias conosco, podemos contar com o seu envio para o próximo envio?"
-                else:
+                    url = f"https://api.whatsapp.com/send?phone=55{telefone}&text={mensagem}"
+                    webbrowser.open(url)
+                elif dias == 90:  
                     mensagem = f"Olá {nome}, tudo bem? precisamos agendar o envio da sua sacolinha! podemos contar contigo ?\nTemos sacolinha há mais de 90 dias.\n(Caso não tenhamos resposta em 30 dias as peças serão doadas sem possibilidade de reembolso)"
-                url = f"https://api.whatsapp.com/send?phone=55{telefone}&text={mensagem}"
-                webbrowser.open(url)
-            else:
-                print(f"Cliente com ID '{cliente_id}' não encontrado.")
+                    url = f"https://api.whatsapp.com/send?phone=55{telefone}&text={mensagem}"
+                    webbrowser.open(url)
+                    data_notificacao = datetime.now().strftime('%Y-%m-%d')
+                    cursor.execute("UPDATE vendas SET notificacao = ? WHERE cliente_id = ?", (data_notificacao, cliente_id))
+                    conexao.commit()
+                else:
+                    print(f"Cliente com ID '{cliente_id}' não encontrado.")
         except Exception as e:
             print(f"Erro ao obter dados do cliente: {e}")
         finally:
