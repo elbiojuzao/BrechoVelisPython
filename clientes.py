@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, Toplevel, messagebox, Button
 import sqlite3
-import json
 from datetime import datetime
 from utils import conectar_banco_dados, desconectar_banco_dados, salvar_configuracoes_janela, carregar_configuracoes
 

@@ -4,7 +4,8 @@ from datetime import datetime, timedelta
 import webbrowser
 from utils import conectar_banco_dados, desconectar_banco_dados, salvar_configuracoes_janela, carregar_configuracoes
 
-def criar_tela_mensagens(root):
+
+def main(root):
     nova_janela = Toplevel(root)
     nova_janela.title("Mensagens")
     nova_janela.geometry("800x600")
@@ -24,8 +25,8 @@ def criar_tela_mensagens(root):
     btn_mais_90_dias = tk.Button(frame_filtros, text="Compras +90 dias", command=lambda: filtrar_vendas(tree_mensagens, 90))
     btn_mais_90_dias.pack(side=tk.LEFT, padx=5, pady=5)
 
-    tree_mensagens = ttk.Treeview(frame_principal, columns=("Enviar", "Data", "Nome", "Peca", "Valor"))
-    tree_mensagens.heading("#0", text="Enviar")
+    tree_mensagens = ttk.Treeview(frame_principal, columns=("ID", "Enviar", "Data", "Nome", "Peca", "Valor"))
+    tree_mensagens.heading("ID", text="ID")
     tree_mensagens.heading("Enviar", text="Enviar")
     tree_mensagens.heading("Data", text="Data")
     tree_mensagens.heading("Nome", text="Nome")
@@ -50,18 +51,20 @@ def filtrar_vendas(tree, dias, dias_fim=None):
             if data_fim:
                 cursor.execute("""
                     SELECT
+                        v.cliente_id,
                         c.nome,
                         MAX(v.data) AS ultima_data,
                         SUM(v.peca) AS total_pecas,
                         SUM(v.valor) AS total_valor
                     FROM vendas v
                     JOIN clientes c ON v.cliente_id = c.id
-                    WHERE v.data <= ? AND v.pago = 'Sim' AND v.frete IN ('Espera', 'Embalar')
+                    WHERE v.data BETWEEN ? AND ? AND v.pago = 'Sim' AND v.frete IN ('Espera', 'Embalar')
                     GROUP BY v.cliente_id
                 """, (data_fim.strftime('%Y-%m-%d'), data_inicio.strftime('%Y-%m-%d')))
             else:
                 cursor.execute("""
                     SELECT
+                        v.cliente_id,
                         c.nome,
                         MAX(v.data) AS ultima_data,
                         SUM(v.peca) AS total_pecas,
@@ -83,60 +86,64 @@ def filtrar_vendas(tree, dias, dias_fim=None):
 
     for venda in vendas:
         try:
-            data_formatada = datetime.strptime(venda[1], '%Y-%m-%d').strftime('%d/%m/%Y')
+            data_formatada = datetime.strptime(venda[2], '%Y-%m-%d').strftime('%d/%m/%Y')
         except ValueError:
-            print(f"Erro ao converter data: {venda[1]}")
-            data_formatada = venda[1]  # Mantém a data original se a conversão falhar
-        tree.insert("", tk.END, values=("[Enviar]", data_formatada, venda[0], venda[2], venda[3]))
+            print(f"Erro ao converter data: {venda[2]}")
+            data_formatada = venda[2]  # Mantém a data original se a conversão falhar
+        tree.insert("", tk.END, values=(venda[0], "[Enviar]", data_formatada, venda[1], venda[3], venda[4])) 
 
-    ajustar_colunas(tree)  # Chama a função para ajustar as colunas
+    tree.dias = dias 
+    tree.dias_fim = dias_fim
+
+    ajustar_colunas(tree)  
 
 def clique_treeview(event, tree):
     item = tree.identify_row(event.y)
     column = tree.identify_column(event.x)
-    if item and column == "#1":
-        nome_cliente = tree.item(item, "values")[2]  # Obtém o nome do cliente
-        enviar_mensagem_whatsapp(nome_cliente)
+    if item and column == "#2":
+        cliente_id = tree.item(item, "values")[0]  # Obtém o cliente_id
+        enviar_mensagem_whatsapp(cliente_id, tree.dias, tree.dias_fim)
 
-def enviar_mensagem_whatsapp(nome_cliente):
+def enviar_mensagem_whatsapp(cliente_id, dias, dias_fim):
     conexao = conectar_banco_dados()
     if conexao:
         cursor = conexao.cursor()
         try:
-            cursor.execute("SELECT celular FROM clientes WHERE nome = ?", (nome_cliente,))
+            cursor.execute("SELECT nome, Celular FROM clientes WHERE id = ?", (cliente_id,))
             resultado = cursor.fetchone()
             if resultado:
-                telefone = resultado[0]
-                mensagem = "teste"  # Mensagem padrão
+                nome, telefone = resultado
+                if dias_fim:
+                    mensagem = f"Olá {nome}, tudo bem?\nEstamos passando para lembrar que você possui sacolinhas próximo dos 30 dias conosco, antes de fazer o envio venha aproveitar nossa live, assim pode levar mais peças e seu frete pode ficar um pouco mais em conta ;D"
+                elif dias > 30 and dias <= 90:
+                    mensagem = f"Olá {nome}, tudo bem?\nEstamos passando para lembrar que você possui sacolinhas com mais de 30 dias conosco, podemos contar com o seu envio para o próximo envio?"
+                else:
+                    mensagem = f"Olá {nome}, tudo bem? precisamos agendar o envio da sua sacolinha! podemos contar contigo ?\nTemos sacolinha há mais de 90 dias.\n(Caso não tenhamos resposta em 30 dias as peças serão doadas sem possibilidade de reembolso)"
                 url = f"https://api.whatsapp.com/send?phone=55{telefone}&text={mensagem}"
                 webbrowser.open(url)
             else:
-                print(f"Cliente '{nome_cliente}' não encontrado.")
+                print(f"Cliente com ID '{cliente_id}' não encontrado.")
         except Exception as e:
-            print(f"Erro ao obter telefone do cliente: {e}")
+            print(f"Erro ao obter dados do cliente: {e}")
         finally:
             desconectar_banco_dados(conexao)
 
-def main(root):
-    criar_tela_mensagens(root)
-
 def ajustar_colunas(tree):
-    tree.update_idletasks()  # Atualiza a interface
+    tree.update_idletasks()
     for col in tree["columns"]:
         max_width = 0
         for item in tree.get_children(""):
             try:
                 width = tree.set(item, col).encode().decode('UTF-8')
-                # width = tree.set(item, col) #Original
                 width = tk.font.Font().measure(width)
                 if width > max_width:
                     max_width = width
             except:
                 pass
         if max_width < tree.column(col, 'width'):
-           pass
+            pass
         else:
-           tree.column(col, width=max_width)
+            tree.column(col, width=max_width)
 
 if __name__ == "__main__":
     root = tk.Tk()
