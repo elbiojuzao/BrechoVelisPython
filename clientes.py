@@ -1,6 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
-from tkinter import Toplevel, messagebox, Button 
+from tkinter import ttk, Toplevel, messagebox, Button
 import sqlite3
 import json
 from datetime import datetime
@@ -8,12 +7,12 @@ from utils import conectar_banco_dados, desconectar_banco_dados, salvar_configur
 
 def main():
     nova_janela = tk.Toplevel()
-    nova_janela.title("Clientes") 
+    nova_janela.title("Clientes")
 
     # Carregar configurações ou definir padrão para a janela de Clientes
     configuracoes = carregar_configuracoes()
-    if configuracoes and "clientes" in configuracoes: #alterado
-        nova_janela.geometry(f"{configuracoes['clientes']['largura']}x{configuracoes['clientes']['altura']}+{configuracoes['clientes']['x']}+{configuracoes['clientes']['y']}") #alterado
+    if configuracoes and "clientes" in configuracoes:
+        nova_janela.geometry(f"{configuracoes['clientes']['largura']}x{configuracoes['clientes']['altura']}+{configuracoes['clientes']['x']}+{configuracoes['clientes']['y']}")
     else:
         nova_janela.geometry("1250x600")
 
@@ -21,7 +20,6 @@ def main():
         conexao = conectar_banco_dados()
         if not conexao:
             return []
-    
         try:
             cursor = conexao.cursor()
             cursor.execute("SELECT * FROM clientes")
@@ -31,7 +29,6 @@ def main():
         except sqlite3.Error as erro:
             print("Erro na consulta SQL:", erro)
             return []
-            
 
     def exibir_dados_clientes(dados_clientes):
         for item in treeview_clientes.get_children():
@@ -65,9 +62,9 @@ def main():
             cep = str(cep) if cep else ""
 
             if (nome_filtro in nome and
-                nome_completo_filtro in nome_completo and
-                celular_filtro in celular and
-                cep_filtro in cep):
+                    nome_completo_filtro in nome_completo and
+                    celular_filtro in celular and
+                    cep_filtro in cep):
                 dados_filtrados.append(cliente)
 
         exibir_dados_clientes(dados_filtrados)
@@ -148,18 +145,18 @@ def main():
                 messagebox.showerror("Erro", "Não foi possível conectar ao banco de dados.")
 
             try:
-                    cursor = conexao.cursor()
-                    data_hora_modificacao = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                    # Recupera o id do cliente pelo nome
-                    cursor.execute("SELECT id FROM clientes WHERE nome=?", (cliente[0],))
-                    id_cliente = cursor.fetchone()[0]
-                    cursor.execute("UPDATE clientes SET nome=?, cep=?, nome_completo=?, Celular=?, Email=?, CPF=?, Rua=?, num=?, Complemento=?, Bairro=?, Cidade=?, data_hora_modificacao=? WHERE id=?",
-                        (entry_nome.get(), entry_cep.get(), entry_nome_completo.get(), entry_celular.get(), entry_email.get(), entry_cpf.get(), entry_rua.get(), entry_numero.get(), entry_complemento.get(), entry_bairro.get(), entry_cidade.get(), data_hora_modificacao, id_cliente))
-                    conexao.commit()
-                    desconectar_banco_dados(conexao)
-                    dados_atualizados = carregar_dados_clientes()
-                    exibir_dados_clientes(dados_atualizados)
-                    popup.destroy()
+                cursor = conexao.cursor()
+                data_hora_modificacao = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                # Recupera o id do cliente pelo nome
+                cursor.execute("SELECT id FROM clientes WHERE nome=?", (cliente[0],))
+                id_cliente = cursor.fetchone()[0]
+                cursor.execute("UPDATE clientes SET nome=?, cep=?, nome_completo=?, Celular=?, Email=?, CPF=?, Rua=?, num=?, Complemento=?, Bairro=?, Cidade=?, data_hora_modificacao=? WHERE id=?",
+                               (entry_nome.get(), entry_cep.get(), entry_nome_completo.get(), entry_celular.get(), entry_email.get(), entry_cpf.get(), entry_rua.get(), entry_numero.get(), entry_complemento.get(), entry_bairro.get(), entry_cidade.get(), data_hora_modificacao, id_cliente))
+                conexao.commit()
+                desconectar_banco_dados(conexao)
+                dados_atualizados = carregar_dados_clientes()
+                exibir_dados_clientes(dados_atualizados)
+                popup.destroy()
             except sqlite3.Error as erro:
                 messagebox.showerror("Erro", f"Erro ao atualizar cliente: {erro}")
 
@@ -189,10 +186,14 @@ def main():
     btn_filtrar = tk.Button(filtro_frame, text="Filtrar", command=filtrar_clientes, font=("Arial", 12))
     btn_filtrar.grid(row=2, column=0, columnspan=4, pady=10)
 
+     # Botão "Novo Cliente"
+    btn_novo_cliente = tk.Button(filtro_frame, text="Novo Cliente", command=lambda: criar_janela_cadastro_cliente(treeview_clientes), font=("Arial", 12))
+    btn_novo_cliente.grid(row=2, column=4, padx=5, pady=5)
+
     # Relatório de Clientes (Treeview)
     colunas_clientes = ("nome", "cep", "nome_completo", "celular", "email", "cpf", "rua", "numero", "complemento", "bairro", "cidade")
     treeview_clientes = ttk.Treeview(nova_janela, columns=colunas_clientes, show="headings")
-    treeview_clientes.bind("<Button-3>", editar_cliente) 
+    treeview_clientes.bind("<Button-3>", editar_cliente)
     for coluna in colunas_clientes:
         treeview_clientes.heading(coluna, text=coluna)
         treeview_clientes.column(coluna, width=100)
@@ -203,7 +204,75 @@ def main():
     exibir_dados_clientes(dados_iniciais)
 
     # Salvar configurações ao fechar a janela de Clientes
-    nova_janela.protocol("WM_DELETE_WINDOW", lambda: (salvar_configuracoes_janela(nova_janela, "clientes"), nova_janela.destroy())) #alterado
+    nova_janela.protocol("WM_DELETE_WINDOW", lambda: (salvar_configuracoes_janela(nova_janela, "clientes"), nova_janela.destroy()))
+
+    def criar_janela_cadastro_cliente(tree_clientes):
+        janela_cadastro = Toplevel()
+        janela_cadastro.title("Cadastro de Cliente")
+
+        # Campos de cadastro
+        tk.Label(janela_cadastro, text="Nome:").grid(row=0, column=0)
+        entry_nome = tk.Entry(janela_cadastro)
+        entry_nome.grid(row=0, column=1)
+
+        tk.Label(janela_cadastro, text="CEP:").grid(row=1, column=0)
+        entry_cep = tk.Entry(janela_cadastro)
+        entry_cep.grid(row=1, column=1)
+
+        tk.Label(janela_cadastro, text="Nome Completo:").grid(row=2, column=0)
+        entry_nome_completo = tk.Entry(janela_cadastro)
+        entry_nome_completo.grid(row=2, column=1)
+
+        tk.Label(janela_cadastro, text="Telefone:").grid(row=3, column=0)
+        entry_celular = tk.Entry(janela_cadastro)
+        entry_celular.grid(row=3, column=1)
+
+        tk.Label(janela_cadastro, text="Email:").grid(row=4, column=0)
+        entry_email = tk.Entry(janela_cadastro)
+        entry_email.grid(row=4, column=1)
+
+        tk.Label(janela_cadastro, text="CPF:").grid(row=5, column=0)
+        entry_cpf = tk.Entry(janela_cadastro)
+        entry_cpf.grid(row=5, column=1)
+
+        tk.Label(janela_cadastro, text="Rua:").grid(row=6, column=0)
+        entry_rua = tk.Entry(janela_cadastro)
+        entry_rua.grid(row=6, column=1)
+
+        tk.Label(janela_cadastro, text="Número:").grid(row=7, column=0)
+        entry_numero = tk.Entry(janela_cadastro)
+        entry_numero.grid(row=7, column=1)
+
+        tk.Label(janela_cadastro, text="Complemento:").grid(row=8, column=0)
+        entry_complemento = tk.Entry(janela_cadastro)
+        entry_complemento.grid(row=8, column=1)
+
+        tk.Label(janela_cadastro, text="Bairro:").grid(row=9, column=0)
+        entry_bairro = tk.Entry(janela_cadastro)
+        entry_bairro.grid(row=9, column=1)
+
+        tk.Label(janela_cadastro, text="Cidade:").grid(row=10, column=0)
+        entry_cidade = tk.Entry(janela_cadastro)
+        entry_cidade.grid(row=10, column=1)
+        def salvar_novo_cliente():
+            conexao = conectar_banco_dados()
+            if not conexao:
+                messagebox.showerror("Erro", "Não foi possível conectar ao banco de dados.")
+
+            try:
+                cursor = conexao.cursor()
+                data_hora_modificacao = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                cursor.execute("INSERT INTO clientes (nome, cep, nome_completo, Celular, Email, CPF, Rua, num, Complemento, Bairro, Cidade, data_hora_modificacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                            (entry_nome.get(), entry_cep.get(), entry_nome_completo.get(), entry_celular.get(), entry_email.get(), entry_cpf.get(), entry_rua.get(), entry_numero.get(), entry_complemento.get(), entry_bairro.get(), entry_cidade.get(), data_hora_modificacao))
+                conexao.commit()
+                desconectar_banco_dados(conexao)
+                dados_atualizados = carregar_dados_clientes()
+                exibir_dados_clientes(dados_atualizados)
+                janela_cadastro.destroy()
+            except sqlite3.Error as erro:
+                messagebox.showerror("Erro", f"Erro ao cadastrar cliente: {erro}")
+
+        Button(janela_cadastro, text="Salvar", command=salvar_novo_cliente).grid(row=11, column=0, columnspan=2)
 
 if __name__ == "__main__":
     main()
