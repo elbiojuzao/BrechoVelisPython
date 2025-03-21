@@ -24,6 +24,9 @@ root = tk.Tk()
 root.title("Menu Principal")
 root.geometry("400x300")
 
+# Exibe a tela de notificações junto com a tela principal
+mensagens.criar_tela_notificacoes(root)
+
 btn_dashboard = tk.Button(root, text="Dashboard", command=abrir_dashboard, width=20, height=2)
 btn_dashboard.pack(pady=10)
 
