@@ -1,5 +1,6 @@
 import sqlite3
 import json
+import tkinter as tk
 
 def conectar_banco_dados():
     try:
@@ -31,3 +32,18 @@ def carregar_configuracoes():
             return configuracoes
     except FileNotFoundError:
         return None
+    
+def ajustar_colunas(tree):
+    tree.update_idletasks()
+    for col in tree["columns"]:
+        max_width = 0
+        for item in tree.get_children(""):
+            width = tree.set(item, col)
+            if isinstance(width, str):
+                width = tk.font.Font().measure(width)
+                if width > max_width:
+                    max_width = width
+        if max_width < tree.column(col, 'width'):
+            pass
+        else:
+            tree.column(col, width=max_width)

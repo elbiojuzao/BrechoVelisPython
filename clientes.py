@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, Toplevel, messagebox, Button
 import sqlite3
 from datetime import datetime
-from utils import conectar_banco_dados, desconectar_banco_dados, salvar_configuracoes_janela, carregar_configuracoes
+from utils import conectar_banco_dados, desconectar_banco_dados, salvar_configuracoes_janela, carregar_configuracoes, ajustar_colunas
 
 def main():
     nova_janela = tk.Toplevel()
@@ -67,6 +67,7 @@ def main():
                 dados_filtrados.append(cliente)
 
         exibir_dados_clientes(dados_filtrados)
+        ajustar_colunas(treeview_clientes)
 
     def editar_cliente(event):
         item = treeview_clientes.selection()[0]

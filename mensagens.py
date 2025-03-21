@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, Toplevel
 from datetime import datetime, timedelta
 import webbrowser
-from utils import conectar_banco_dados, desconectar_banco_dados
+from utils import conectar_banco_dados, desconectar_banco_dados, ajustar_colunas
 
 def criar_tela_notificacoes(root):
     nova_janela_notificacoes = Toplevel(root)
@@ -235,23 +235,6 @@ def enviar_mensagem_whatsapp(cliente_id, dias, dias_fim):
             print(f"Erro ao obter dados do cliente: {e}")
         finally:
             desconectar_banco_dados(conexao)
-
-def ajustar_colunas(tree):
-    tree.update_idletasks()
-    for col in tree["columns"]:
-        max_width = 0
-        for item in tree.get_children(""):
-            try:
-                width = tree.set(item, col).encode().decode('UTF-8')
-                width = tk.font.Font().measure(width)
-                if width > max_width:
-                    max_width = width
-            except:
-                pass
-        if max_width < tree.column(col, 'width'):
-            pass
-        else:
-            tree.column(col, width=max_width)
 
 if __name__ == "__main__":
     root = tk.Tk()

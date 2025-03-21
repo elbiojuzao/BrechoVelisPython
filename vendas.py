@@ -6,7 +6,7 @@ import csv
 from tkinter import filedialog, messagebox, Toplevel, Button
 from tkcalendar import Calendar
 from datetime import datetime
-from utils import conectar_banco_dados, desconectar_banco_dados, carregar_configuracoes, salvar_configuracoes_janela
+from utils import conectar_banco_dados, desconectar_banco_dados, carregar_configuracoes, salvar_configuracoes_janela, ajustar_colunas
 
 popup_edicao_aberto = None
 
@@ -63,17 +63,6 @@ def main():
                 treeview_vendas.insert("", tk.END, values=venda_tratada, tags=("amarelo_claro",))  # Amarelo
             elif pago == "Sim":
                 treeview_vendas.insert("", tk.END, values=venda_tratada, tags=("pago_sim",))  # Verde
-
-         # Ajustar a largura das colunas ao conteúdo
-        nova_janela.update_idletasks()
-        for col in colunas_vendas:
-            treeview_vendas.column(col, width=tk.font.Font().measure(col), stretch=False)
-            for item in treeview_vendas.get_children():
-                try:
-                    cell_value = treeview_vendas.set(item, col)
-                    treeview_vendas.column(col, width=max(treeview_vendas.column(col, 'width'), tk.font.Font().measure(cell_value)), stretch=False)
-                except tk.TclError:
-                    pass # Lidar com itens que podem ter menos colunas
 
     def importar_compras():
         arquivo_csv = filedialog.askopenfilename(filetypes=[("Arquivos CSV", "*.csv")])
@@ -376,7 +365,8 @@ def main():
     # Carregar e exibir dados iniciais
     dados_iniciais = carregar_dados_vendas()
     exibir_dados_vendas(dados_iniciais)
-
+    ajustar_colunas(treeview_vendas)
+    
     # Salvar configurações ao fechar a janela de Vendas
     nova_janela.protocol("WM_DELETE_WINDOW", lambda: (salvar_configuracoes_janela(nova_janela, "vendas"), nova_janela.destroy()))
 
