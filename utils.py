@@ -47,3 +47,14 @@ def ajustar_colunas(tree):
             pass
         else:
             tree.column(col, width=max_width)
+
+def formatar_valor_monetario(valor):
+    if valor is None:
+        return ""
+    try:
+        valor_float = float(str(valor).replace(",", "."))
+        return f"R$ {valor_float:.2f}"
+    except ValueError:
+        print(f"Valor inválido encontrado: {valor}")
+        return "R$ 0.00" 
+    
