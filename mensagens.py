@@ -2,96 +2,109 @@ import tkinter as tk
 from tkinter import ttk, Toplevel
 from datetime import datetime, timedelta
 import webbrowser
-from utils import conectar_banco_dados, desconectar_banco_dados, salvar_configuracoes_janela, carregar_configuracoes
- 
+from utils import conectar_banco_dados, desconectar_banco_dados
+
 def criar_tela_notificacoes(root):
     nova_janela_notificacoes = Toplevel(root)
     nova_janela_notificacoes.title("Notificações")
     nova_janela_notificacoes.geometry("600x400")
 
-    if buscar_notificacoes():
-        mensagem_label = tk.Label(nova_janela_notificacoes, text="Temos sacolinhas com mais de 90 dias paradas pendentes. Mande mensagem para essas pessoas.")
-        mensagem_label.pack(pady=20)
+    if existem_notificacoes():
+        exibir_mensagem_notificacoes(nova_janela_notificacoes)
     else:
-        tree_notificacoes = ttk.Treeview(nova_janela_notificacoes, columns=("Nome", "Data"))
-        tree_notificacoes.heading("#0", text="Nome")
-        tree_notificacoes.heading("Nome", text="Nome")
-        tree_notificacoes.heading("Data", text="Data")
-        tree_notificacoes.pack(fill=tk.BOTH, expand=True)
+        exibir_treeview_notificacoes(nova_janela_notificacoes)
 
-        notificacoes = buscar_notificacoes_detalhes() + buscar_notificacoes_30_dias()
-        for notificacao in notificacoes:
-            tree_notificacoes.insert("", tk.END, values=(notificacao[0], notificacao[1]))
-
-def buscar_notificacoes():
-    conexao = conectar_banco_dados()
-    if conexao:
-        cursor = conexao.cursor()
-        try:
-            hoje = datetime.now().date()
-            data_90_dias_atras = hoje - timedelta(days=90)
-            data_30_dias_atras = hoje - timedelta(days=30)
-            cursor.execute("""
-                SELECT 1
-                FROM vendas v
-                WHERE (v.data <= ? AND v.pago = 'Sim' AND v.frete IN ('Espera', 'Embalar') AND v.notificacao IS NULL)
-                   OR (v.notificacao <= ?)
-                LIMIT 1
-            """, (data_90_dias_atras.strftime('%Y-%m-%d'), data_30_dias_atras.strftime('%Y-%m-%d')))
-            return cursor.fetchone() is not None
-        except Exception as e:
-            print(f"Erro ao buscar notificações: {e}")
-            return False
-        finally:
-            desconectar_banco_dados(conexao)
-    else:
+def existem_notificacoes():
+    try:
+        data_90_dias_atras, data_30_dias_atras = calcular_datas_notificacao()
+        consulta = construir_consulta_notificacoes(data_90_dias_atras, data_30_dias_atras)
+        return executar_consulta_fetch(consulta, "fetchone") is not None
+    except Exception as e:
+        print(f"Erro ao verificar notificações: {e}")
         return False
 
-def buscar_notificacoes_detalhes():
+def calcular_datas_notificacao():
+    hoje = datetime.now().date()
+    return hoje - timedelta(days=90), hoje - timedelta(days=30)
+
+def construir_consulta_notificacoes(data_90, data_30):
+    return """
+        SELECT 1
+        FROM vendas v
+        WHERE (v.data <= ? AND v.pago = 'Sim' AND v.frete IN ('Espera', 'Embalar') AND v.notificacao IS NULL)
+           OR (v.notificacao <= ?)
+        LIMIT 1
+    """, (data_90.strftime('%Y-%m-%d'), data_30.strftime('%Y-%m-%d'))
+
+def executar_consulta_fetch(consulta, tipo):
     conexao = conectar_banco_dados()
-    if conexao:
+    if not conexao:
+        return None if tipo == "fetchone" else []
+
+    try:
         cursor = conexao.cursor()
-        try:
-            hoje = datetime.now().date()
-            data_90_dias_atras = hoje - timedelta(days=90)
-            cursor.execute("""
-                SELECT c.nome, MAX(v.data) AS ultima_data
-                FROM vendas v
-                JOIN clientes c ON v.cliente_id = c.id
-                WHERE v.data <= ? AND v.pago = 'Sim' AND v.frete IN ('Espera', 'Embalar') AND v.notificacao IS NULL
-                GROUP BY v.cliente_id
-            """, (data_90_dias_atras.strftime('%Y-%m-%d'),))
+        cursor.execute(*consulta)
+        if tipo == "fetchone":
+            return cursor.fetchone()
+        elif tipo == "fetchall":
             return cursor.fetchall()
-        except Exception as e:
-            print(f"Erro ao buscar notificações: {e}")
-            return []
-        finally:
-            desconectar_banco_dados(conexao)
-    else:
+        else:
+            return None  
+    except Exception as e:
+        print(f"Erro ao executar consulta: {e}")
+        return None if tipo == "fetchone" else []
+    finally:
+        desconectar_banco_dados(conexao)
+        
+def exibir_mensagem_notificacoes(janela):
+    mensagem_label = tk.Label(janela, text="Temos sacolinhas com mais de 90 dias paradas ou notificações de 30 dias pendentes. Mande mensagem para essas pessoas.")
+    mensagem_label.pack(pady=20)
+
+def exibir_treeview_notificacoes(janela):
+    tree_notificacoes = configurar_treeview_notificacoes(janela)
+    notificacoes = buscar_dados_notificacoes()
+    for notificacao in notificacoes:
+        tree_notificacoes.insert("", tk.END, values=notificacao)
+
+def configurar_treeview_notificacoes(janela):
+    tree = ttk.Treeview(janela, columns=("Nome", "Data"))
+    tree.heading("#0", text="Nome")
+    tree.heading("Nome", text="Nome")
+    tree.heading("Data", text="Data")
+    tree.pack(fill=tk.BOTH, expand=True)
+    return tree
+
+def buscar_dados_notificacoes():
+    try:
+        data_90_dias_atras = datetime.now().date() - timedelta(days=90)
+        consulta_90 = construir_consulta_detalhes_90_dias(data_90_dias_atras)
+        dados_90 = executar_consulta_fetch(consulta_90, "fetchall")
+
+        data_30_dias_atras = datetime.now().date() - timedelta(days=30)
+        consulta_30 = construir_consulta_detalhes_30_dias(data_30_dias_atras)
+        dados_30 = executar_consulta_fetch(consulta_30, "fetchall")
+
+        return dados_90 + dados_30
+    except Exception as e:
+        print(f"Erro ao buscar dados de notificações: {e}")
         return []
 
-def buscar_notificacoes_30_dias():
-    conexao = conectar_banco_dados()
-    if conexao:
-        cursor = conexao.cursor()
-        try:
-            hoje = datetime.now().date()
-            data_30_dias_atras = hoje - timedelta(days=30)
-            cursor.execute("""
-                SELECT c.nome, v.notificacao
-                FROM vendas v
-                JOIN clientes c ON v.cliente_id = c.id
-                WHERE v.notificacao <= ?
-            """, (data_30_dias_atras.strftime('%Y-%m-%d'),))
-            return cursor.fetchall()
-        except Exception as e:
-            print(f"Erro ao buscar notificações de 30 dias: {e}")
-            return []
-        finally:
-            desconectar_banco_dados(conexao)
-    else:
-        return []
+def construir_consulta_detalhes_90_dias(data):
+    return """
+        SELECT c.nome, MAX(v.data) AS ultima_data
+        FROM vendas v
+        JOIN clientes c ON v.cliente_id = c.id
+        WHERE v.data <= ? AND v.pago = 'Sim' AND v.frete IN ('Espera', 'Embalar') AND v.notificacao IS NULL
+        GROUP BY v.cliente_id
+    """, (data.strftime('%Y-%m-%d'),)
 
+def construir_consulta_detalhes_30_dias(data):
+    return """
+        SELECT c.nome, v.notificacao
+        FROM vendas v
+        JOIN clientes c ON v.cliente_id = c.id
+        WHERE v.notificacao <= ?
+    """, (data.strftime('%Y-%m-%d'),)
 
 def main(root):
     nova_janela = Toplevel(root)
