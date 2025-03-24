@@ -25,13 +25,19 @@ def salvar_configuracoes_janela(janela, nome_secao):
     with open("configuracoes.json", "w") as arquivo:
         json.dump(configuracoes, arquivo)
 
+def salvar_configuracoes(configuracoes):
+    configuracoes_atuais = carregar_configuracoes() or {}
+    configuracoes_atuais.update(configuracoes)
+    with open("configuracoes.json", "w") as arquivo:
+        json.dump(configuracoes_atuais, arquivo)
+
 def carregar_configuracoes():
     try:
         with open("configuracoes.json", "r") as arquivo:
             configuracoes = json.load(arquivo)
             return configuracoes
     except FileNotFoundError:
-        return None
+        return {}
     
 def ajustar_colunas(tree):
     tree.update_idletasks()
@@ -56,5 +62,4 @@ def formatar_valor_monetario(valor):
         return f"R$ {valor_float:.2f}"
     except ValueError:
         print(f"Valor inválido encontrado: {valor}")
-        return "R$ 0.00" 
-    
+        return "R$ 0.00"
