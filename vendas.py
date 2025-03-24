@@ -294,7 +294,10 @@ def main(dark_mode=False):
 
     configuracoes = carregar_configuracoes()
     if configuracoes and "vendas" in configuracoes:
-        nova_janela.geometry(f"{configuracoes['vendas']['largura']}x{configuracoes['vendas']['altura']}+{configuracoes['vendas']['x']}+{configuracoes['vendas']['y']}")
+        try:
+            nova_janela.geometry(f"{configuracoes['vendas']['largura']}x{configuracoes['vendas']['altura']}+{configuracoes['vendas']['x']}+{configuracoes['vendas']['y']}")
+        except KeyError:
+            nova_janela.geometry("1100x600")
     else:
         nova_janela.geometry("1100x600")
 
@@ -305,27 +308,27 @@ def main(dark_mode=False):
     frame_filtros = ctk.CTkFrame(nova_janela)
     frame_filtros.pack(pady=10)
 
-    ctk.CTkLabel(frame_filtros, text="Nome:").grid(row=0, column=0)
+    ctk.CTkLabel(frame_filtros, text="Nome:").grid(row=0, column=0, padx=(0, 5))
     entry_nome = ctk.CTkEntry(frame_filtros)
     entry_nome.grid(row=0, column=1)
 
-    ctk.CTkLabel(frame_filtros, text="Data Início:").grid(row=0, column=2)
+    ctk.CTkLabel(frame_filtros, text="Data Início:").grid(row=0, column=2, padx=(0, 5))
     entry_data_inicio = ctk.CTkEntry(frame_filtros)
     entry_data_inicio.grid(row=0, column=3)
     entry_data_inicio.bind("<Button-1>", abrir_calendario_inicio)
 
-    ctk.CTkLabel(frame_filtros, text="Data Fim:").grid(row=0, column=5)
+    ctk.CTkLabel(frame_filtros, text="Data Fim:").grid(row=0, column=5, padx=(0, 5))
     entry_data_fim = ctk.CTkEntry(frame_filtros)
     entry_data_fim.grid(row=0, column=6)
     entry_data_fim.bind("<Button-1>", abrir_calendario_fim)
 
-    ctk.CTkLabel(frame_filtros, text="Frete:").grid(row=1, column=0)
+    ctk.CTkLabel(frame_filtros, text="Frete:").grid(row=1, column=0, padx=(0, 5))
     opcoes_frete = ["Todos"] + list(set([venda[10] for venda in carregar_dados_vendas() if venda[9]]))
     combo_frete = ttk.Combobox(frame_filtros, values=opcoes_frete)
     combo_frete.grid(row=1, column=1)
     combo_frete.current(0)
 
-    ctk.CTkLabel(frame_filtros, text="Pago:").grid(row=1, column=2)
+    ctk.CTkLabel(frame_filtros, text="Pago:").grid(row=1, column=2, padx=(0, 5))
     pago_sim_var = ctk.IntVar()
     pago_nao_var = ctk.IntVar()
     check_pago_sim = ctk.CTkCheckBox(frame_filtros, text="Sim", variable=pago_sim_var)
@@ -335,7 +338,7 @@ def main(dark_mode=False):
 
     btn_filtrar = ctk.CTkButton(frame_filtros, text="Filtrar", command=filtrar_vendas)
     btn_filtrar.grid(row=0, column=7, rowspan=2, padx=10)
-    btn_filtrar.config(width=10, height=2)
+    btn_filtrar.configure(width=10, height=2)
 
     colunas_vendas = ("Data", "Nome", "Peças", "Valor", "1ª Peça", "Haver", "Total Sacolinha", "Pago", "Tipo de pagamento", "Frete", "Adendo")
     treeview_vendas = ttk.Treeview(nova_janela, columns=colunas_vendas, show="headings")
