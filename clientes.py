@@ -1,19 +1,42 @@
-import tkinter as tk
-from tkinter import ttk, Toplevel, messagebox, Button
+import customtkinter as ctk
 import sqlite3
 from datetime import datetime
-from utils import conectar_banco_dados, desconectar_banco_dados, salvar_configuracoes_janela, carregar_configuracoes, ajustar_colunas
+from utils import conectar_banco_dados, desconectar_banco_dados, salvar_configuracoes_janela, carregar_configuracoes
+from tkinter import ttk
 
-def main():
-    nova_janela = tk.Toplevel()
+def main(dark_mode=False):
+    nova_janela = ctk.CTkToplevel()
     nova_janela.title("Clientes")
+
+    if dark_mode:
+        ctk.set_appearance_mode("Dark")
+    else:
+        ctk.set_appearance_mode("Light")
 
     # Carregar configurações ou definir padrão para a janela de Clientes
     configuracoes = carregar_configuracoes()
     if configuracoes and "clientes" in configuracoes:
-        nova_janela.geometry(f"{configuracoes['clientes']['largura']}x{configuracoes['clientes']['altura']}+{configuracoes['clientes']['x']}+{configuracoes['clientes']['y']}")
+        try:
+            nova_janela.geometry(f"{configuracoes['clientes']['largura']}x{configuracoes['clientes']['altura']}+{configuracoes['clientes']['x']}+{configuracoes['clientes']['y']}")
+        except KeyError:
+            nova_janela.geometry("1250x600")
     else:
         nova_janela.geometry("1250x600")
+
+    nova_janela.grid_rowconfigure(1, weight=1)
+    nova_janela.grid_columnconfigure(0, weight=1)
+
+    tabview = ctk.CTkTabview(nova_janela)
+    tabview.grid(row=1, column=0, columnspan=4, padx=10, pady=10, sticky="nsew")
+
+    tabview.add("Clientes")
+
+    tree_clientes = ttk.Treeview(tabview.tab("Clientes"), columns=("Nome", "CEP", "Nome Completo", "Celular", "Email", "CPF", "Rua", "Número", "Complemento", "Bairro", "Cidade"), show="headings")
+    tree_clientes.pack(fill="both", expand=True)
+
+    for coluna in ("Nome", "CEP", "Nome Completo", "Celular", "Email", "CPF", "Rua", "Número", "Complemento", "Bairro", "Cidade"):
+        tree_clientes.heading(coluna, text=coluna)
+        tree_clientes.column(coluna, width=100) # Ajuste a largura das colunas conforme necessário
 
     def carregar_dados_clientes():
         conexao = conectar_banco_dados()
@@ -30,16 +53,16 @@ def main():
             return []
 
     def exibir_dados_clientes(dados_clientes):
-        for item in treeview_clientes.get_children():
-            treeview_clientes.delete(item)
+        tree_clientes.delete(*tree_clientes.get_children()) # Limpa os dados existentes
         for cliente in dados_clientes:
-            cliente_sem_id = []
-            for valor in cliente[1:]:  # Ignora o ID
-                if valor is None:
-                    cliente_sem_id.append("")  # Substitui None por ""
-                else:
-                    cliente_sem_id.append(valor)
-            treeview_clientes.insert("", tk.END, values=cliente_sem_id)
+            if len(cliente) >= 12:
+                linha = [str(cliente[i]) if cliente[i] is not None else "" for i in range(1, 12)]
+                tree_clientes.insert("", "end", values=linha)
+            else:
+                print(f"Aviso: Registro de cliente com número incorreto de colunas: {cliente}")
+
+    dados_iniciais = carregar_dados_clientes()
+    exibir_dados_clientes(dados_iniciais)
 
     def filtrar_clientes():
         nome_filtro = nome_entry.get().lower()
@@ -61,19 +84,24 @@ def main():
             cep = str(cep) if cep else ""
 
             if (nome_filtro in nome and
-                    nome_completo_filtro in nome_completo and
-                    celular_filtro in celular and
-                    cep_filtro in cep):
+                nome_completo_filtro in nome_completo and
+                celular_filtro in celular and
+                cep_filtro in cep):
                 dados_filtrados.append(cliente)
 
         exibir_dados_clientes(dados_filtrados)
-        ajustar_colunas(treeview_clientes)
 
     def editar_cliente(event):
-        item = treeview_clientes.selection()[0]
-        cliente = treeview_clientes.item(item, 'values')
+        # Obter a linha clicada
+        linha_clicada = tree_clientes.focus()
+        if not linha_clicada:
+            return # Nenhuma linha selecionada
 
-        popup = Toplevel(nova_janela)
+        # Obter os valores da linha clicada
+        dados_cliente = tree_clientes.item(linha_clicada, "values")
+
+        # Criar janela de edição
+        popup = ctk.CTkToplevel(nova_janela)
         popup.title("Editar Cliente")
 
         # Obter coordenadas do cursor
@@ -84,71 +112,71 @@ def main():
         popup.geometry(f"+{x}+{y}")
 
         # Campos editáveis
-        tk.Label(popup, text="Nome:").grid(row=0, column=0)
-        entry_nome = tk.Entry(popup)
+        ctk.CTkLabel(popup, text="Nome:").grid(row=0, column=0)
+        entry_nome = ctk.CTkEntry(popup)
         entry_nome.grid(row=0, column=1)
-        entry_nome.insert(0, cliente[0])
+        entry_nome.insert(0, dados_cliente[0]) # Nome
 
-        tk.Label(popup, text="CEP:").grid(row=1, column=0)
-        entry_cep = tk.Entry(popup)
+        ctk.CTkLabel(popup, text="CEP:").grid(row=1, column=0)
+        entry_cep = ctk.CTkEntry(popup)
         entry_cep.grid(row=1, column=1)
-        entry_cep.insert(0, cliente[1])
+        entry_cep.insert(0, dados_cliente[1]) # CEP
 
-        tk.Label(popup, text="Nome Completo:").grid(row=2, column=0)
-        entry_nome_completo = tk.Entry(popup)
+        ctk.CTkLabel(popup, text="Nome Completo:").grid(row=2, column=0)
+        entry_nome_completo = ctk.CTkEntry(popup)
         entry_nome_completo.grid(row=2, column=1)
-        entry_nome_completo.insert(0, cliente[2])
+        entry_nome_completo.insert(0, dados_cliente[2])  # Nome Completo
 
-        tk.Label(popup, text="Telefone:").grid(row=3, column=0)
-        entry_celular = tk.Entry(popup)
+        ctk.CTkLabel(popup, text="Telefone:").grid(row=3, column=0)
+        entry_celular = ctk.CTkEntry(popup)
         entry_celular.grid(row=3, column=1)
-        entry_celular.insert(0, cliente[3])
+        entry_celular.insert(0, dados_cliente[3])  # Telefone
 
-        tk.Label(popup, text="Email:").grid(row=4, column=0)
-        entry_email = tk.Entry(popup)
+        ctk.CTkLabel(popup, text="Email:").grid(row=4, column=0)
+        entry_email = ctk.CTkEntry(popup)
         entry_email.grid(row=4, column=1)
-        entry_email.insert(0, cliente[4])
+        entry_email.insert(0, dados_cliente[4])  # Email
 
-        tk.Label(popup, text="CPF:").grid(row=5, column=0)
-        entry_cpf = tk.Entry(popup)
+        ctk.CTkLabel(popup, text="CPF:").grid(row=5, column=0)
+        entry_cpf = ctk.CTkEntry(popup)
         entry_cpf.grid(row=5, column=1)
-        entry_cpf.insert(0, cliente[5])
+        entry_cpf.insert(0, dados_cliente[5])  # CPF
 
-        tk.Label(popup, text="Rua:").grid(row=6, column=0)
-        entry_rua = tk.Entry(popup)
+        ctk.CTkLabel(popup, text="Rua:").grid(row=6, column=0)
+        entry_rua = ctk.CTkEntry(popup)
         entry_rua.grid(row=6, column=1)
-        entry_rua.insert(0, cliente[6])
+        entry_rua.insert(0, dados_cliente[6])  # Rua
 
-        tk.Label(popup, text="Número:").grid(row=7, column=0)
-        entry_numero = tk.Entry(popup)
+        ctk.CTkLabel(popup, text="Número:").grid(row=7, column=0)
+        entry_numero = ctk.CTkEntry(popup)
         entry_numero.grid(row=7, column=1)
-        entry_numero.insert(0, cliente[7])
+        entry_numero.insert(0, dados_cliente[7])  # Número
 
-        tk.Label(popup, text="Complemento:").grid(row=8, column=0)
-        entry_complemento = tk.Entry(popup)
+        ctk.CTkLabel(popup, text="Complemento:").grid(row=8, column=0)
+        entry_complemento = ctk.CTkEntry(popup)
         entry_complemento.grid(row=8, column=1)
-        entry_complemento.insert(0, cliente[8])
+        entry_complemento.insert(0, dados_cliente[8])  # Complemento
 
-        tk.Label(popup, text="Bairro:").grid(row=9, column=0)
-        entry_bairro = tk.Entry(popup)
+        ctk.CTkLabel(popup, text="Bairro:").grid(row=9, column=0)
+        entry_bairro = ctk.CTkEntry(popup)
         entry_bairro.grid(row=9, column=1)
-        entry_bairro.insert(0, cliente[9])
+        entry_bairro.insert(0, dados_cliente[9])  # Bairro
 
-        tk.Label(popup, text="Cidade:").grid(row=10, column=0)
-        entry_cidade = tk.Entry(popup)
+        ctk.CTkLabel(popup, text="Cidade:").grid(row=10, column=0)
+        entry_cidade = ctk.CTkEntry(popup)
         entry_cidade.grid(row=10, column=1)
-        entry_cidade.insert(0, cliente[10])
+        entry_cidade.insert(0, dados_cliente[10])  # Cidade
 
         def salvar_alteracoes_cliente():
             conexao = conectar_banco_dados()
             if not conexao:
-                messagebox.showerror("Erro", "Não foi possível conectar ao banco de dados.")
+                ctk.CTkMessagebox.showerror("Erro", "Não foi possível conectar ao banco de dados.")
 
             try:
                 cursor = conexao.cursor()
                 data_hora_modificacao = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 # Recupera o id do cliente pelo nome
-                cursor.execute("SELECT id FROM clientes WHERE nome=?", (cliente[0],))
+                cursor.execute("SELECT id FROM clientes WHERE nome=?", (dados_cliente[0],))
                 id_cliente = cursor.fetchone()[0]
                 cursor.execute("UPDATE clientes SET nome=?, cep=?, nome_completo=?, Celular=?, Email=?, CPF=?, Rua=?, num=?, Complemento=?, Bairro=?, Cidade=?, data_hora_modificacao=? WHERE id=?",
                                (entry_nome.get(), entry_cep.get(), entry_nome_completo.get(), entry_celular.get(), entry_email.get(), entry_cpf.get(), entry_rua.get(), entry_numero.get(), entry_complemento.get(), entry_bairro.get(), entry_cidade.get(), data_hora_modificacao, id_cliente))
@@ -158,46 +186,37 @@ def main():
                 exibir_dados_clientes(dados_atualizados)
                 popup.destroy()
             except sqlite3.Error as erro:
-                messagebox.showerror("Erro", f"Erro ao atualizar cliente: {erro}")
+                ctk.CTkMessagebox.showerror("Erro", f"Erro ao atualizar cliente: {erro}")
 
-        Button(popup, text="Salvar", command=salvar_alteracoes_cliente).grid(row=11, column=0, columnspan=2)
+        ctk.CTkButton(popup, text="Salvar", command=salvar_alteracoes_cliente).grid(row=11, column=0, columnspan=2)
 
     # Filtros
-    filtro_frame = tk.Frame(nova_janela)
+    filtro_frame = ctk.CTkFrame(nova_janela)
     filtro_frame.grid(row=0, column=0, columnspan=4, padx=10, pady=10)
 
     # Campos de entrada para cada filtro em linha
-    tk.Label(filtro_frame, text="Nome:", font=("Arial", 12)).grid(row=0, column=0, padx=5, pady=5)
-    nome_entry = tk.Entry(filtro_frame, font=("Arial", 12))
+    ctk.CTkLabel(filtro_frame, text="Nome:", font=("Arial", 12)).grid(row=0, column=0, padx=5, pady=5)
+    nome_entry = ctk.CTkEntry(filtro_frame, font=("Arial", 12))
     nome_entry.grid(row=0, column=1, padx=5, pady=5)
 
-    tk.Label(filtro_frame, text="Nome Completo:", font=("Arial", 12)).grid(row=0, column=2, padx=5, pady=5)
-    nome_completo_entry = tk.Entry(filtro_frame, font=("Arial", 12))
+    ctk.CTkLabel(filtro_frame, text="Nome Completo:", font=("Arial", 12)).grid(row=0, column=2, padx=5, pady=5)
+    nome_completo_entry = ctk.CTkEntry(filtro_frame, font=("Arial", 12))
     nome_completo_entry.grid(row=0, column=3, padx=5, pady=5)
 
-    tk.Label(filtro_frame, text="Celular:", font=("Arial", 12)).grid(row=1, column=0, padx=5, pady=5)
-    celular_entry = tk.Entry(filtro_frame, font=("Arial", 12))
+    ctk.CTkLabel(filtro_frame, text="Celular:", font=("Arial", 12)).grid(row=1, column=0, padx=5, pady=5)
+    celular_entry = ctk.CTkEntry(filtro_frame, font=("Arial", 12))
     celular_entry.grid(row=1, column=1, padx=5, pady=5)
 
-    tk.Label(filtro_frame, text="CEP:", font=("Arial", 12)).grid(row=1, column=2, padx=5, pady=5)
-    cep_entry = tk.Entry(filtro_frame, font=("Arial", 12))
+    ctk.CTkLabel(filtro_frame, text="CEP:", font=("Arial", 12)).grid(row=1, column=2, padx=5, pady=5)
+    cep_entry = ctk.CTkEntry(filtro_frame, font=("Arial", 12))
     cep_entry.grid(row=1, column=3, padx=5, pady=5)
 
-    btn_filtrar = tk.Button(filtro_frame, text="Filtrar", command=filtrar_clientes, font=("Arial", 12))
+    btn_filtrar = ctk.CTkButton(filtro_frame, text="Filtrar", command=filtrar_clientes, font=("Arial", 12))
     btn_filtrar.grid(row=2, column=0, columnspan=4, pady=10)
 
-     # Botão "Novo Cliente"
-    btn_novo_cliente = tk.Button(filtro_frame, text="Novo Cliente", command=lambda: criar_janela_cadastro_cliente(treeview_clientes), font=("Arial", 12))
-    btn_novo_cliente.grid(row=2, column=4, padx=5, pady=5)
-
-    # Relatório de Clientes (Treeview)
-    colunas_clientes = ("nome", "cep", "nome_completo", "celular", "email", "cpf", "rua", "numero", "complemento", "bairro", "cidade")
-    treeview_clientes = ttk.Treeview(nova_janela, columns=colunas_clientes, show="headings")
-    treeview_clientes.bind("<Button-3>", editar_cliente)
-    for coluna in colunas_clientes:
-        treeview_clientes.heading(coluna, text=coluna)
-        treeview_clientes.column(coluna, width=100)
-    treeview_clientes.grid(row=1, column=0, columnspan=4, padx=10, pady=10)
+    # Botão "Novo Cliente"
+    btn_novo_cliente = ctk.CTkButton(filtro_frame, text="Novo Cliente", command=lambda: criar_janela_cadastro_cliente(tree_clientes), font=("Arial", 12))
+    btn_novo_cliente.grid(row=1, column=4, padx=2, pady=2)
 
     # Carregar e exibir dados iniciais
     dados_iniciais = carregar_dados_clientes()
@@ -207,72 +226,70 @@ def main():
     nova_janela.protocol("WM_DELETE_WINDOW", lambda: (salvar_configuracoes_janela(nova_janela, "clientes"), nova_janela.destroy()))
 
     def criar_janela_cadastro_cliente(tree_clientes):
-        janela_cadastro = Toplevel()
+        janela_cadastro = ctk.CTkToplevel()
         janela_cadastro.title("Cadastro de Cliente")
 
         # Campos de cadastro
-        tk.Label(janela_cadastro, text="Nome:").grid(row=0, column=0)
-        entry_nome = tk.Entry(janela_cadastro)
+        ctk.CTkLabel(janela_cadastro, text="Nome:").grid(row=0, column=0)
+        entry_nome = ctk.CTkEntry(janela_cadastro)
         entry_nome.grid(row=0, column=1)
 
-        tk.Label(janela_cadastro, text="CEP:").grid(row=1, column=0)
-        entry_cep = tk.Entry(janela_cadastro)
+        ctk.CTkLabel(janela_cadastro, text="CEP:").grid(row=1, column=0)
+        entry_cep = ctk.CTkEntry(janela_cadastro)
         entry_cep.grid(row=1, column=1)
 
-        tk.Label(janela_cadastro, text="Nome Completo:").grid(row=2, column=0)
-        entry_nome_completo = tk.Entry(janela_cadastro)
+        ctk.CTkLabel(janela_cadastro, text="Nome Completo:").grid(row=2, column=0)
+        entry_nome_completo = ctk.CTkEntry(janela_cadastro)
         entry_nome_completo.grid(row=2, column=1)
 
-        tk.Label(janela_cadastro, text="Telefone:").grid(row=3, column=0)
-        entry_celular = tk.Entry(janela_cadastro)
+        ctk.CTkLabel(janela_cadastro, text="Telefone:").grid(row=3, column=0)
+        entry_celular = ctk.CTkEntry(janela_cadastro)
         entry_celular.grid(row=3, column=1)
 
-        tk.Label(janela_cadastro, text="Email:").grid(row=4, column=0)
-        entry_email = tk.Entry(janela_cadastro)
+        ctk.CTkLabel(janela_cadastro, text="Email:").grid(row=4, column=0)
+        entry_email = ctk.CTkEntry(janela_cadastro)
         entry_email.grid(row=4, column=1)
 
-        tk.Label(janela_cadastro, text="CPF:").grid(row=5, column=0)
-        entry_cpf = tk.Entry(janela_cadastro)
+        ctk.CTkLabel(janela_cadastro, text="CPF:").grid(row=5, column=0)
+        entry_cpf = ctk.CTkEntry(janela_cadastro)
         entry_cpf.grid(row=5, column=1)
 
-        tk.Label(janela_cadastro, text="Rua:").grid(row=6, column=0)
-        entry_rua = tk.Entry(janela_cadastro)
+        ctk.CTkLabel(janela_cadastro, text="Rua:").grid(row=6, column=0)
+        entry_rua = ctk.CTkEntry(janela_cadastro)
         entry_rua.grid(row=6, column=1)
 
-        tk.Label(janela_cadastro, text="Número:").grid(row=7, column=0)
-        entry_numero = tk.Entry(janela_cadastro)
+        ctk.CTkLabel(janela_cadastro, text="Número:").grid(row=7, column=0)
+        entry_numero = ctk.CTkEntry(janela_cadastro)
         entry_numero.grid(row=7, column=1)
 
-        tk.Label(janela_cadastro, text="Complemento:").grid(row=8, column=0)
-        entry_complemento = tk.Entry(janela_cadastro)
+        ctk.CTkLabel(janela_cadastro, text="Complemento:").grid(row=8, column=0)
+        entry_complemento = ctk.CTkEntry(janela_cadastro)
         entry_complemento.grid(row=8, column=1)
 
-        tk.Label(janela_cadastro, text="Bairro:").grid(row=9, column=0)
-        entry_bairro = tk.Entry(janela_cadastro)
+        ctk.CTkLabel(janela_cadastro, text="Bairro:").grid(row=9, column=0)
+        entry_bairro = ctk.CTkEntry(janela_cadastro)
         entry_bairro.grid(row=9, column=1)
 
-        tk.Label(janela_cadastro, text="Cidade:").grid(row=10, column=0)
-        entry_cidade = tk.Entry(janela_cadastro)
+        ctk.CTkLabel(janela_cadastro, text="Cidade:").grid(row=10, column=0)
+        entry_cidade = ctk.CTkEntry(janela_cadastro)
         entry_cidade.grid(row=10, column=1)
+
         def salvar_novo_cliente():
             conexao = conectar_banco_dados()
             if not conexao:
-                messagebox.showerror("Erro", "Não foi possível conectar ao banco de dados.")
+                ctk.CTkMessagebox.showerror("Erro", "Não foi possível conectar ao banco de dados.")
 
             try:
                 cursor = conexao.cursor()
                 data_hora_modificacao = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
                 cursor.execute("INSERT INTO clientes (nome, cep, nome_completo, Celular, Email, CPF, Rua, num, Complemento, Bairro, Cidade, data_hora_modificacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                            (entry_nome.get(), entry_cep.get(), entry_nome_completo.get(), entry_celular.get(), entry_email.get(), entry_cpf.get(), entry_rua.get(), entry_numero.get(), entry_complemento.get(), entry_bairro.get(), entry_cidade.get(), data_hora_modificacao))
+                               (entry_nome.get(), entry_cep.get(), entry_nome_completo.get(), entry_celular.get(), entry_email.get(), entry_cpf.get(), entry_rua.get(), entry_numero.get(), entry_complemento.get(), entry_bairro.get(), entry_cidade.get(), data_hora_modificacao))
                 conexao.commit()
                 desconectar_banco_dados(conexao)
                 dados_atualizados = carregar_dados_clientes()
                 exibir_dados_clientes(dados_atualizados)
                 janela_cadastro.destroy()
             except sqlite3.Error as erro:
-                messagebox.showerror("Erro", f"Erro ao cadastrar cliente: {erro}")
+                ctk.CTkMessagebox.showerror("Erro", f"Erro ao cadastrar cliente: {erro}")
 
-        Button(janela_cadastro, text="Salvar", command=salvar_novo_cliente).grid(row=11, column=0, columnspan=2)
-
-if __name__ == "__main__":
-    main()
+        ctk.CTkButton(janela_cadastro, text="Salvar", command=salvar_novo_cliente).grid(row=11, column=0, columnspan=2)

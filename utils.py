@@ -1,13 +1,13 @@
 import sqlite3
 import json
-import tkinter as tk
+import customtkinter as ctk 
 
 def conectar_banco_dados():
     try:
-        conexao = sqlite3.connect("brechoVelis.db")
+        conexao = sqlite3.connect('brechoVelis.db')
         return conexao
-    except sqlite3.Error as erro:
-        print("Erro ao conectar ao banco de dados:", erro)
+    except sqlite3.Error as e:
+        print(f"Erro ao conectar ao banco de dados: {e}")
         return None
 
 def desconectar_banco_dados(conexao):
@@ -15,48 +15,43 @@ def desconectar_banco_dados(conexao):
         conexao.close()
 
 def salvar_configuracoes_janela(janela, nome_secao):
-    configuracoes = carregar_configuracoes() or {}
-    configuracoes[nome_secao] = {
-        "x": janela.winfo_x(),
-        "y": janela.winfo_y(),
-        "largura": janela.winfo_width(),
-        "altura": janela.winfo_height()
-    }
-    with open("configuracoes.json", "w") as arquivo:
-        json.dump(configuracoes, arquivo)
+    try:
+        configuracoes = carregar_configuracoes()
+        configuracoes[nome_secao] = {
+            "x": janela.winfo_x(),
+            "y": janela.winfo_y(),
+            "width": janela.winfo_width(),
+            "height": janela.winfo_height()
+        }
+        salvar_configuracoes(configuracoes)
+    except Exception as e:
+        print(f"Erro ao salvar configurações da janela: {e}")
 
 def salvar_configuracoes(configuracoes):
-    configuracoes_atuais = carregar_configuracoes() or {}
-    configuracoes_atuais.update(configuracoes)
-    with open("configuracoes.json", "w") as arquivo:
-        json.dump(configuracoes_atuais, arquivo)
+    try:
+        with open("configuracoes.json", "w") as arquivo:
+            json.dump(configuracoes, arquivo)
+    except Exception as e:
+        print(f"Erro ao salvar configurações: {e}")
 
 def carregar_configuracoes():
     try:
         with open("configuracoes.json", "r") as arquivo:
-            configuracoes = json.load(arquivo)
-            return configuracoes
+            return json.load(arquivo)
     except FileNotFoundError:
         return {}
-    
+    except Exception as e:
+        print(f"Erro ao carregar configurações: {e}")
+        return {}
+
 def ajustar_colunas(tree):
-    tree.update_idletasks()
-    for col in tree["columns"]:
-        max_width = 0
-        for item in tree.get_children(""):
-            width = tree.set(item, col)
-            if isinstance(width, str):
-                width = tk.font.Font().measure(width)
-                if width > max_width:
-                    max_width = width
-        if max_width < tree.column(col, 'width'):
-            pass
-        else:
-            tree.column(col, width=max_width)
+    for coluna in tree["columns"]:
+        tree.column(coluna, anchor="w", stretch=False)
+        tree.heading(coluna, anchor="w")
 
 def formatar_valor_monetario(valor):
     if valor is None:
-        return ""
+        return "R$ 0.00"
     try:
         valor_float = float(str(valor).replace(",", "."))
         return f"R$ {valor_float:.2f}"

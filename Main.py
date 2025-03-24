@@ -6,7 +6,7 @@ import clientes
 import mensagens
 
 def abrir_dashboard():
-    dashboard.main(dark_mode)  # Passa dark_mode como argumento
+    dashboard.main(dark_mode)
 
 def abrir_compras():
     vendas.main(dark_mode)
@@ -24,32 +24,6 @@ def toggle_dark_mode():
     global dark_mode
     dark_mode = not dark_mode
     atualizar_estilo()
-    # Atualizar o modo escuro nas telas abertas (se houver)
-    try:
-        dashboard.root.destroy()
-        dashboard.main(dark_mode)
-    except AttributeError:
-        pass
-    try:
-        vendas.root.destroy()
-        vendas.main(dark_mode)
-    except AttributeError:
-        pass
-    try:
-        fretes.root.destroy()
-        fretes.main(dark_mode)
-    except AttributeError:
-        pass
-    try:
-        clientes.root.destroy()
-        clientes.main(dark_mode)
-    except AttributeError:
-        pass
-    try:
-        mensagens.root.destroy()
-        mensagens.main(root, dark_mode)
-    except AttributeError:
-        pass
 
 def atualizar_estilo():
     global dark_mode
