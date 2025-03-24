@@ -1,5 +1,5 @@
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox, Toplevel, Button
+import customtkinter as ctk
+from tkinter import ttk, filedialog, messagebox, Toplevel
 import sqlite3
 import csv
 from tkcalendar import Calendar
@@ -49,7 +49,7 @@ def exibir_dados_vendas(dados_vendas):
         elif venda[8] == "Sim":
             tags = ("pago_sim",)
 
-        treeview_vendas.insert("", tk.END, values=venda_tratada, tags=tags)
+        treeview_vendas.insert("", ctk.END, values=venda_tratada, tags=tags)
 
 def importar_compras():
     arquivo_csv = filedialog.askopenfilename(filetypes=[("Arquivos CSV", "*.csv")])
@@ -101,7 +101,6 @@ def importar_compras():
         messagebox.showerror("Erro", f"Erro ao importar dados: {erro}")
 
 def popup_x_y(entry):
-    """Calcula as coordenadas x e y para posicionar um popup próximo à entrada."""
     x = entry.winfo_rootx() + entry.winfo_width()
     y = entry.winfo_rooty()
     popup = Toplevel(frame_filtros)
@@ -112,16 +111,16 @@ def abrir_calendario_inicio(event=None):
     popup = popup_x_y(entry_data_inicio)
     cal = Calendar(popup, date_pattern="dd/mm/yyyy")
     cal.pack()
-    Button(popup, text="Selecionar", command=lambda: selecionar_data(cal.get_date(), entry_data_inicio, popup)).pack()
+    ctk.CTkButton(popup, text="Selecionar", command=lambda: selecionar_data(cal.get_date(), entry_data_inicio, popup)).pack()
 
 def abrir_calendario_fim(event=None):
     popup= popup_x_y(entry_data_fim)
     cal = Calendar(popup, date_pattern="dd/mm/yyyy")
     cal.pack()
-    Button(popup, text="Selecionar", command=lambda: selecionar_data(cal.get_date(), entry_data_fim, popup)).pack()
+    ctk.CTkButton(popup, text="Selecionar", command=lambda: selecionar_data(cal.get_date(), entry_data_fim, popup)).pack()
 
 def selecionar_data(data, entry, popup):
-    entry.delete(0, tk.END)
+    entry.delete(0, ctk.END)
     entry.insert(0, data)
     popup.destroy()
 
@@ -193,7 +192,7 @@ def editar_venda(event, nova_janela):
     item = treeview_vendas.selection()[0]
     venda = treeview_vendas.item(item, 'values')
 
-    popup = Toplevel(nova_janela) 
+    popup = ctk.CTkToplevel(nova_janela)
     popup_edicao_aberto = popup
     popup.title("Editar Venda")
 
@@ -201,47 +200,47 @@ def editar_venda(event, nova_janela):
     y = event.y_root
     popup.geometry(f"+{x}+{y}")
 
-    tk.Label(popup, text="Nome do Cliente:").grid(row=0, column=0)
-    tk.Label(popup, text=venda[1]).grid(row=0, column=1)
+    ctk.CTkLabel(popup, text="Nome do Cliente:").grid(row=0, column=0)
+    ctk.CTkLabel(popup, text=venda[1]).grid(row=0, column=1)
 
-    tk.Label(popup, text="Peças:").grid(row=1, column=0)
-    entry_pecas = tk.Entry(popup)
+    ctk.CTkLabel(popup, text="Peças:").grid(row=1, column=0)
+    entry_pecas = ctk.CTkEntry(popup)
     entry_pecas.grid(row=1, column=1)
     entry_pecas.insert(0, venda[2])
 
-    tk.Label(popup, text="Valor:").grid(row=2, column=0)
-    entry_valor = tk.Entry(popup)
+    ctk.CTkLabel(popup, text="Valor:").grid(row=2, column=0)
+    entry_valor = ctk.CTkEntry(popup)
     entry_valor.grid(row=2, column=1)
     entry_valor.insert(0, venda[3].replace("R$ ", ""))
     entry_valor.configure(state="normal")
 
-    tk.Label(popup, text="Haver:").grid(row=3, column=0)
-    entry_haver = tk.Entry(popup)
+    ctk.CTkLabel(popup, text="Haver:").grid(row=3, column=0)
+    entry_haver = ctk.CTkEntry(popup)
     entry_haver.grid(row=3, column=1)
     entry_haver.insert(0, venda[5].replace("R$ ", ""))
     entry_haver.configure(state="normal")
 
-    tk.Label(popup, text="Total Sacolinha:").grid(row=4, column=0)
-    entry_total_sacolinha = tk.Entry(popup)
+    ctk.CTkLabel(popup, text="Total Sacolinha:").grid(row=4, column=0)
+    entry_total_sacolinha = ctk.CTkEntry(popup)
     entry_total_sacolinha.grid(row=4, column=1)
     entry_total_sacolinha.insert(0, venda[6].replace("R$ ", ""))
     entry_total_sacolinha.configure(state="normal")
 
-    tk.Label(popup, text="Pago:").grid(row=5, column=0)
+    ctk.CTkLabel(popup, text="Pago:").grid(row=5, column=0)
     combo_pago = ttk.Combobox(popup, values=["Sim", "Não"])
     combo_pago.grid(row=5, column=1)
     combo_pago.set(venda[7])
 
-    tk.Label(popup, text="Tipo de Pagamento:").grid(row=6, column=0)
+    ctk.CTkLabel(popup, text="Tipo de Pagamento:").grid(row=6, column=0)
     opcoes_pagamento = list(set([venda[9] for venda in carregar_dados_vendas() if venda[9]]))
     combo_tipo_pagamento = ttk.Combobox(popup, values=opcoes_pagamento)
     combo_tipo_pagamento.grid(row=6, column=1)
     combo_tipo_pagamento.set(venda[8])
 
-    tk.Label(popup, text="Adendo:").grid(row=7, column=0)
-    text_adendo = tk.Text(popup, height=4, width=30)
+    ctk.CTkLabel(popup, text="Adendo:").grid(row=7, column=0)
+    text_adendo = ctk.CTkTextbox(popup, height=4, width=30)
     text_adendo.grid(row=7, column=1)
-    text_adendo.insert(tk.END, venda[10])
+    text_adendo.insert("1.0", venda[10])
 
     def ao_fechar_popup_edicao():
         global popup_edicao_aberto
@@ -259,7 +258,7 @@ def editar_venda(event, nova_janela):
         valor = entry_valor.get().replace("R$ ", "")
         haver = entry_haver.get().replace("R$ ", "")
         total_sacolinha = entry_total_sacolinha.get().replace("R$ ", "")
-        adendo = text_adendo.get("1.0", tk.END).strip()
+        adendo = text_adendo.get("1.0", ctk.END).strip()
 
         conexao = conectar_banco_dados()
         if not conexao:
@@ -280,67 +279,64 @@ def editar_venda(event, nova_janela):
         finally:
             ao_fechar_popup_edicao()
 
-    Button(popup, text="Salvar", command=salvar_alteracoes).grid(row=10, column=0, columnspan=2, pady=10)
-    Button(popup, text="Cancelar", command=ao_fechar_popup_edicao).grid(row=11, column=0, columnspan=2, pady=5)
+    ctk.CTkButton(popup, text="Salvar", command=salvar_alteracoes).grid(row=10, column=0, columnspan=2, pady=10)
+    ctk.CTkButton(popup, text="Cancelar", command=ao_fechar_popup_edicao).grid(row=11, column=0, columnspan=2, pady=5)
 
-def main():
+def main(dark_mode=False):
     global popup_edicao_aberto
-    nova_janela = tk.Toplevel()
+    nova_janela = ctk.CTkToplevel()
     nova_janela.title("Vendas")
 
-    # Carregar configurações ou definir padrão para a janela de Vendas
+    if dark_mode:
+        ctk.set_appearance_mode("Dark")
+    else:
+        ctk.set_appearance_mode("Light")
+
     configuracoes = carregar_configuracoes()
     if configuracoes and "vendas" in configuracoes:
         nova_janela.geometry(f"{configuracoes['vendas']['largura']}x{configuracoes['vendas']['altura']}+{configuracoes['vendas']['x']}+{configuracoes['vendas']['y']}")
     else:
         nova_janela.geometry("1100x600")
 
-    # Botão Importar Compras no topo
-    botao_importar = tk.Button(nova_janela, text="Importar Compras", command=importar_compras)
+    botao_importar = ctk.CTkButton(nova_janela, text="Importar Compras", command=importar_compras)
     botao_importar.pack(pady=10)
 
-    # Filtros
     global frame_filtros, entry_nome, entry_data_inicio, entry_data_fim, combo_frete, pago_sim_var, pago_nao_var, treeview_vendas, dados_iniciais
-    frame_filtros = tk.Frame(nova_janela)
+    frame_filtros = ctk.CTkFrame(nova_janela)
     frame_filtros.pack(pady=10)
 
-    # Filtro Nome
-    tk.Label(frame_filtros, text="Nome:").grid(row=0, column=0)
-    entry_nome = tk.Entry(frame_filtros)
+    ctk.CTkLabel(frame_filtros, text="Nome:").grid(row=0, column=0)
+    entry_nome = ctk.CTkEntry(frame_filtros)
     entry_nome.grid(row=0, column=1)
 
-    # Filtro Data
-    tk.Label(frame_filtros, text="Data Início:").grid(row=0, column=2)
-    entry_data_inicio = tk.Entry(frame_filtros)
+    ctk.CTkLabel(frame_filtros, text="Data Início:").grid(row=0, column=2)
+    entry_data_inicio = ctk.CTkEntry(frame_filtros)
     entry_data_inicio.grid(row=0, column=3)
     entry_data_inicio.bind("<Button-1>", abrir_calendario_inicio)
 
-    tk.Label(frame_filtros, text="Data Fim:").grid(row=0, column=5)
-    entry_data_fim = tk.Entry(frame_filtros)
+    ctk.CTkLabel(frame_filtros, text="Data Fim:").grid(row=0, column=5)
+    entry_data_fim = ctk.CTkEntry(frame_filtros)
     entry_data_fim.grid(row=0, column=6)
     entry_data_fim.bind("<Button-1>", abrir_calendario_fim)
 
-    # Filtro Frete
-    tk.Label(frame_filtros, text="Frete:").grid(row=1, column=0)
+    ctk.CTkLabel(frame_filtros, text="Frete:").grid(row=1, column=0)
     opcoes_frete = ["Todos"] + list(set([venda[10] for venda in carregar_dados_vendas() if venda[9]]))
     combo_frete = ttk.Combobox(frame_filtros, values=opcoes_frete)
     combo_frete.grid(row=1, column=1)
     combo_frete.current(0)
 
-    # Filtro Pago
-    tk.Label(frame_filtros, text="Pago:").grid(row=1, column=2)
-    pago_sim_var = tk.IntVar()
-    pago_nao_var = tk.IntVar()
-    check_pago_sim = tk.Checkbutton(frame_filtros, text="Sim", variable=pago_sim_var)
+    ctk.CTkLabel(frame_filtros, text="Pago:").grid(row=1, column=2)
+    pago_sim_var = ctk.IntVar()
+    pago_nao_var = ctk.IntVar()
+    check_pago_sim = ctk.CTkCheckBox(frame_filtros, text="Sim", variable=pago_sim_var)
     check_pago_sim.grid(row=1, column=3)
-    check_pago_nao = tk.Checkbutton(frame_filtros, text="Não", variable=pago_nao_var)
+    check_pago_nao = ctk.CTkCheckBox(frame_filtros, text="Não", variable=pago_nao_var)
     check_pago_nao.grid(row=1, column=4)
 
-    btn_filtrar = tk.Button(frame_filtros, text="Filtrar", command=filtrar_vendas)
+    btn_filtrar = ctk.CTkButton(frame_filtros, text="Filtrar", command=filtrar_vendas)
     btn_filtrar.grid(row=0, column=7, rowspan=2, padx=10)
     btn_filtrar.config(width=10, height=2)
 
-    # Relatório de Vendas (Treeview)
     colunas_vendas = ("Data", "Nome", "Peças", "Valor", "1ª Peça", "Haver", "Total Sacolinha", "Pago", "Tipo de pagamento", "Frete", "Adendo")
     treeview_vendas = ttk.Treeview(nova_janela, columns=colunas_vendas, show="headings")
     treeview_vendas.bind("<Button-3>", lambda event: editar_venda(event, nova_janela))
@@ -351,16 +347,13 @@ def main():
     treeview_vendas.tag_configure("pago_nao", background="#ffcdd2")
     treeview_vendas.tag_configure("roxo_claro", background="#e0b0ff")
     treeview_vendas.tag_configure("amarelo_claro", background="#fffacd")
-    treeview_vendas.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+    treeview_vendas.pack(padx=10, pady=10, fill=ctk.BOTH, expand=True)
 
-    # Carregar e exibir dados iniciais
     dados_iniciais = carregar_dados_vendas()
     exibir_dados_vendas(dados_iniciais)
 
-    # Ajustar colunas da Treeview
     ajustar_colunas(treeview_vendas)
 
-    # Salvar configurações ao fechar a janela de Vendas
     nova_janela.protocol("WM_DELETE_WINDOW", lambda: (salvar_configuracoes_janela(nova_janela, "vendas"), nova_janela.destroy()))
 
 if __name__ == "__main__":
