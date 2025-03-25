@@ -1,13 +1,13 @@
-import tkinter as tk
+import customtkinter as ctk
 from tkinter import ttk, Toplevel
 from datetime import datetime, timedelta
 import webbrowser
 from utils import conectar_banco_dados, desconectar_banco_dados, ajustar_colunas
 
 def criar_tela_notificacoes(root):
-    nova_janela_notificacoes = Toplevel(root)
+    nova_janela_notificacoes = ctk.CTkToplevel(root)
     nova_janela_notificacoes.title("Notificações")
-    nova_janela_notificacoes.geometry("600x400")
+    nova_janela_notificacoes.geometry("900x300")
 
     if existem_notificacoes():
         exibir_mensagem_notificacoes(nova_janela_notificacoes)
@@ -57,21 +57,21 @@ def executar_consulta_fetch(consulta, tipo):
         desconectar_banco_dados(conexao)
         
 def exibir_mensagem_notificacoes(janela):
-    mensagem_label = tk.Label(janela, text="Temos sacolinhas com mais de 90 dias paradas ou notificações de 30 dias pendentes. Mande mensagem para essas pessoas.")
+    mensagem_label = ctk.CTkLabel(janela, text="Temos sacolinhas com mais de 90 dias paradas ou notificações de 30 dias pendentes. Mande mensagem para essas pessoas.")
     mensagem_label.pack(pady=20)
 
 def exibir_treeview_notificacoes(janela):
     tree_notificacoes = configurar_treeview_notificacoes(janela)
     notificacoes = buscar_dados_notificacoes()
     for notificacao in notificacoes:
-        tree_notificacoes.insert("", tk.END, values=notificacao)
+        tree_notificacoes.insert("", ctk.END, values=notificacao)
 
 def configurar_treeview_notificacoes(janela):
-    tree = ttk.Treeview(janela, columns=("Nome", "Data"))
+    tree = ctk.Treeview(janela, columns=("Nome", "Data"))
     tree.heading("#0", text="Nome")
     tree.heading("Nome", text="Nome")
     tree.heading("Data", text="Data")
-    tree.pack(fill=tk.BOTH, expand=True)
+    tree.pack(fill=ctk.BOTH, expand=True)
     return tree
 
 def buscar_dados_notificacoes():
@@ -106,27 +106,34 @@ def construir_consulta_detalhes_30_dias(data):
         WHERE v.notificacao <= ?
     """, (data.strftime('%Y-%m-%d'),)
 
-def main(root):
-    nova_janela = Toplevel(root)
+def main(root, dark_mode):
+    global popup_edicao_aberto
+    nova_janela = ctk.CTkToplevel()
     nova_janela.title("Mensagens")
     nova_janela.geometry("800x600")
 
-    frame_principal = ttk.Frame(nova_janela)
-    frame_principal.pack(fill=tk.BOTH, expand=True)
+    if dark_mode:
+        ctk.set_appearance_mode("Dark")
+    else:
+        ctk.set_appearance_mode("Light")
 
-    frame_filtros = ttk.Frame(frame_principal)
-    frame_filtros.pack(fill=tk.X)
 
-    btn_15_30_dias = tk.Button(frame_filtros, text="Compras 15-30 dias", command=lambda: filtrar_vendas(tree_mensagens, 15, 30))
-    btn_15_30_dias.pack(side=tk.LEFT, padx=5, pady=5)
+    frame_principal = ctk.Frame(nova_janela)
+    frame_principal.pack(fill=ctk.BOTH, expand=True)
 
-    btn_mais_30_dias = tk.Button(frame_filtros, text="Compras +30 dias", command=lambda: filtrar_vendas(tree_mensagens, 30))
-    btn_mais_30_dias.pack(side=tk.LEFT, padx=5, pady=5)
+    frame_filtros = ctk.Frame(frame_principal)
+    frame_filtros.pack(fill=ctk.X)
 
-    btn_mais_90_dias = tk.Button(frame_filtros, text="Compras +90 dias", command=lambda: filtrar_vendas(tree_mensagens, 90))
-    btn_mais_90_dias.pack(side=tk.LEFT, padx=5, pady=5)
+    btn_15_30_dias = ctk.Button(frame_filtros, text="Compras 15-30 dias", command=lambda: filtrar_vendas(tree_mensagens, 15, 30))
+    btn_15_30_dias.pack(side=ctk.LEFT, padx=5, pady=5)
 
-    tree_mensagens = ttk.Treeview(frame_principal, columns=("ID", "Enviar", "Data", "Nome", "Peca", "Valor"))
+    btn_mais_30_dias = ctk.Button(frame_filtros, text="Compras +30 dias", command=lambda: filtrar_vendas(tree_mensagens, 30))
+    btn_mais_30_dias.pack(side=ctk.LEFT, padx=5, pady=5)
+
+    btn_mais_90_dias = ctk.Button(frame_filtros, text="Compras +90 dias", command=lambda: filtrar_vendas(tree_mensagens, 90))
+    btn_mais_90_dias.pack(side=ctk.LEFT, padx=5, pady=5)
+
+    tree_mensagens = ctk.Treeview(frame_principal, columns=("ID", "Enviar", "Data", "Nome", "Peca", "Valor"))
     tree_mensagens.heading("ID", text="ID")
     tree_mensagens.heading("Enviar", text="Enviar")
     tree_mensagens.heading("Data", text="Data")
@@ -134,7 +141,7 @@ def main(root):
     tree_mensagens.heading("Peca", text="Peca")
     tree_mensagens.heading("Valor", text="Valor")
 
-    tree_mensagens.pack(fill=tk.BOTH, expand=True)
+    tree_mensagens.pack(fill=ctk.BOTH, expand=True)
 
     tree_mensagens.bind("<ButtonRelease-1>", lambda event: clique_treeview(event, tree_mensagens))
 
@@ -191,7 +198,7 @@ def filtrar_vendas(tree, dias, dias_fim=None):
         except ValueError:
             print(f"Erro ao converter data: {venda[2]}")
             data_formatada = venda[2]  # Mantém a data original se a conversão falhar
-        tree.insert("", tk.END, values=(venda[0], "[Enviar]", data_formatada, venda[1], venda[3], venda[4])) 
+        tree.insert("", ctk.END, values=(venda[0], "[Enviar]", data_formatada, venda[1], venda[3], venda[4])) 
 
     tree.dias = dias 
     tree.dias_fim = dias_fim
@@ -237,6 +244,6 @@ def enviar_mensagem_whatsapp(cliente_id, dias, dias_fim):
             desconectar_banco_dados(conexao)
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    root = ctk.Tk()
     main(root)
     root.mainloop()
