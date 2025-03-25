@@ -1,18 +1,24 @@
+import customtkinter as ctk
 import tkinter as tk
 from tkinter import ttk
-from tkinter import Toplevel
-import json
-import os
 from utils import salvar_configuracoes_janela, carregar_configuracoes
 
-def main():
-    nova_janela = tk.Toplevel()
-    nova_janela.title("Fretes")
+def main(dark_mode):
+    nova_janela = ctk.CTkToplevel()
+    nova_janela.title("Clientes")
 
-    # Carregar configurações ou definir padrão para a janela de Fretes
+    if dark_mode:
+        ctk.set_appearance_mode("Dark")
+    else:
+        ctk.set_appearance_mode("Light")
+
+    # Carregar configurações ou definir padrão para a janela de Clientes
     configuracoes = carregar_configuracoes()
     if configuracoes and "fretes" in configuracoes:
-        nova_janela.geometry(f"{configuracoes['fretes']['largura']}x{configuracoes['fretes']['altura']}+{configuracoes['fretes']['x']}+{configuracoes['fretes']['y']}")
+        try:
+            nova_janela.geometry(f"{configuracoes['fretes']['largura']}x{configuracoes['fretes']['altura']}+{configuracoes['fretes']['x']}+{configuracoes['clientes']['y']}")
+        except KeyError:
+            nova_janela.geometry("950x600")
     else:
         nova_janela.geometry("950x600")
 
@@ -21,24 +27,24 @@ def main():
     clientes_combobox.grid(row=0, column=0, padx=10, pady=10)
 
     # Campos de Dimensões
-    tk.Label(nova_janela, text="Peso:").grid(row=0, column=1, padx=5, pady=5)
-    peso_entry = tk.Entry(nova_janela)
+    ctk.CTkLabel(nova_janela, text="Peso:").grid(row=0, column=1, padx=5, pady=5)
+    peso_entry = ctk.CTkEntry(nova_janela)
     peso_entry.grid(row=0, column=2, padx=5, pady=5)
 
-    tk.Label(nova_janela, text="Altura:").grid(row=1, column=1, padx=5, pady=5)
-    altura_entry = tk.Entry(nova_janela)
+    ctk.CTkLabel(nova_janela, text="Altura:").grid(row=1, column=1, padx=5, pady=5)
+    altura_entry = ctk.CTkEntry(nova_janela)
     altura_entry.grid(row=1, column=2, padx=5, pady=5)
 
-    tk.Label(nova_janela, text="Largura:").grid(row=2, column=1, padx=5, pady=5)
-    largura_entry = tk.Entry(nova_janela)
+    ctk.CTkLabel(nova_janela, text="Largura:").grid(row=2, column=1, padx=5, pady=5)
+    largura_entry = ctk.CTkEntry(nova_janela)
     largura_entry.grid(row=2, column=2, padx=5, pady=5)
 
-    tk.Label(nova_janela, text="Comprimento:").grid(row=3, column=1, padx=5, pady=5)
-    comprimento_entry = tk.Entry(nova_janela)
+    ctk.CTkLabel(nova_janela, text="Comprimento:").grid(row=3, column=1, padx=5, pady=5)
+    comprimento_entry = ctk.CTkEntry(nova_janela)
     comprimento_entry.grid(row=3, column=2, padx=5, pady=5)
 
     # Botão Criar Envio
-    btn_criar_envio = tk.Button(nova_janela, text="Criar Envio")  # Sem comando por enquanto
+    btn_criar_envio = ctk.CTkButton(nova_janela, text="Criar Envio")  # Sem comando por enquanto
     btn_criar_envio.grid(row=3, column=0, pady=10)
 
     # Relatório de Fretes (Treeview)
