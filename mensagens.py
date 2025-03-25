@@ -67,7 +67,7 @@ def exibir_treeview_notificacoes(janela):
         tree_notificacoes.insert("", ctk.END, values=notificacao)
 
 def configurar_treeview_notificacoes(janela):
-    tree = ctk.Treeview(janela, columns=("Nome", "Data"))
+    tree = ttk.Treeview(janela, columns=("Nome", "Data"))
     tree.heading("#0", text="Nome")
     tree.heading("Nome", text="Nome")
     tree.heading("Data", text="Data")
@@ -118,22 +118,22 @@ def main(root, dark_mode):
         ctk.set_appearance_mode("Light")
 
 
-    frame_principal = ctk.Frame(nova_janela)
+    frame_principal = ctk.CTkFrame(nova_janela)
     frame_principal.pack(fill=ctk.BOTH, expand=True)
 
-    frame_filtros = ctk.Frame(frame_principal)
+    frame_filtros = ctk.CTkFrame(frame_principal)
     frame_filtros.pack(fill=ctk.X)
 
-    btn_15_30_dias = ctk.Button(frame_filtros, text="Compras 15-30 dias", command=lambda: filtrar_vendas(tree_mensagens, 15, 30))
+    btn_15_30_dias = ctk.CTkButton(frame_filtros, text="Compras 15-30 dias", command=lambda: filtrar_vendas(tree_mensagens, 15, 30))
     btn_15_30_dias.pack(side=ctk.LEFT, padx=5, pady=5)
 
-    btn_mais_30_dias = ctk.Button(frame_filtros, text="Compras +30 dias", command=lambda: filtrar_vendas(tree_mensagens, 30))
+    btn_mais_30_dias = ctk.CTkButton(frame_filtros, text="Compras +30 dias", command=lambda: filtrar_vendas(tree_mensagens, 30))
     btn_mais_30_dias.pack(side=ctk.LEFT, padx=5, pady=5)
 
-    btn_mais_90_dias = ctk.Button(frame_filtros, text="Compras +90 dias", command=lambda: filtrar_vendas(tree_mensagens, 90))
+    btn_mais_90_dias = ctk.CTkButton(frame_filtros, text="Compras +90 dias", command=lambda: filtrar_vendas(tree_mensagens, 90))
     btn_mais_90_dias.pack(side=ctk.LEFT, padx=5, pady=5)
 
-    tree_mensagens = ctk.Treeview(frame_principal, columns=("ID", "Enviar", "Data", "Nome", "Peca", "Valor"))
+    tree_mensagens = ttk.Treeview(frame_principal, columns=("ID", "Enviar", "Data", "Nome", "Peca", "Valor"))
     tree_mensagens.heading("ID", text="ID")
     tree_mensagens.heading("Enviar", text="Enviar")
     tree_mensagens.heading("Data", text="Data")
