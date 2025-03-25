@@ -4,8 +4,11 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from datetime import datetime, timedelta
 
+open_dashboards = []
+
 def criar_dashboard_visao_geral():
     dashboard_vg = ctk.CTkToplevel()
+    open_dashboards.append(dashboard_vg) 
     dashboard_vg.title("Visão Geral de Vendas")
     dashboard_vg.minsize(500, 400)
 
@@ -75,6 +78,7 @@ def criar_dashboard_visao_geral():
 
 def criar_dashboard_desempenho_clientes():
     dashboard_dc = ctk.CTkToplevel()
+    open_dashboards.append(dashboard_dc)
     dashboard_dc.title("Desempenho de Clientes")
 
     # Conectar ao banco de dados
@@ -169,7 +173,12 @@ def criar_dashboard_desempenho_clientes():
     plt.show()
 
     desconectar_banco_dados(conexao)
-    
+
+def fechar_todas_as_janelas():
+    for dashboard in open_dashboards:
+        dashboard.destroy()
+    open_dashboards.clear()
+
 def main(dark_mode):
     if dark_mode:
         ctk.set_appearance_mode("dark")
@@ -178,6 +187,9 @@ def main(dark_mode):
 
     dashboard_inicial = ctk.CTkToplevel()
     dashboard_inicial.title("Dashboards")
+    open_dashboards.append(dashboard_inicial) 
+
+    dashboard_inicial.protocol("WM_DELETE_WINDOW", fechar_todas_as_janelas)
 
     botao_visao_geral = ctk.CTkButton(dashboard_inicial, text="Visão Geral de Vendas", command=criar_dashboard_visao_geral)
     botao_visao_geral.pack(pady=20, padx=20)
