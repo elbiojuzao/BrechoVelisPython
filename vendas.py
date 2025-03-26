@@ -14,11 +14,29 @@ def carregar_dados_vendas():
         return []
     try:
         cursor = conexao.cursor()
-        cursor.execute("SELECT * FROM vendas")
+        cursor.execute("""
+            SELECT
+                v.id,
+                v.data,
+                c.nome AS nome_cliente, -- Busca o nome do cliente da tabela clientes
+                v.peca,
+                v.valor,
+                v.primeira_peca,
+                v.haver,
+                v.total_sacolinha,
+                v.pago,
+                v.tipo_pagamento,
+                v.frete,
+                v.adendo,
+                v.notificacao,
+                v.cliente_id -- Ainda selecionamos o cliente_id se precisarmos dele depois
+            FROM vendas v
+            INNER JOIN clientes c ON v.cliente_id = c.id
+        """)
         dados_vendas = cursor.fetchall()
         desconectar_banco_dados(conexao)
         return dados_vendas
-    except sqlite3.Error as erro:
+    except Exception as erro:
         print("Erro na consulta SQL:", erro)
         return []
 
