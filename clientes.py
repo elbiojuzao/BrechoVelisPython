@@ -1,4 +1,5 @@
 import customtkinter as ctk
+import psycopg2 
 import sqlite3
 from datetime import datetime
 from utils import conectar_banco_dados, desconectar_banco_dados, salvar_configuracoes_janela, carregar_configuracoes
@@ -44,12 +45,12 @@ def main(dark_mode=False):
             return []
         try:
             cursor = conexao.cursor()
-            cursor.execute("SELECT * FROM clientes")
+            cursor.execute("SELECT id, nome, cep, nome_completo, celular, email, cpf, rua, num, complemento, bairro, cidade FROM clientes")  # Adapte a consulta se necessário
             dados_clientes = cursor.fetchall()
             desconectar_banco_dados(conexao)
             return dados_clientes
-        except sqlite3.Error as erro:
-            print("Erro na consulta SQL:", erro)
+        except psycopg2.Error as erro:
+            print("Erro na consulta SQL (PostgreSQL):", erro)
             return []
 
     def exibir_dados_clientes(dados_clientes):

@@ -1,19 +1,26 @@
 import sqlite3
+import psycopg2 
 import json
 import customtkinter as ctk 
 
 def conectar_banco_dados():
     try:
-        conexao = sqlite3.connect('brechoVelis.db')
+        conexao = psycopg2.connect(
+            host="db-brechovelis.c12aoooqwhpq.sa-east-1.rds.amazonaws.com",  #endpoint da AWS
+            database="postgres",
+            user="BrechoVelis",
+            password="Dragonforce17." 
+        )
         return conexao
-    except sqlite3.Error as e:
-        print(f"Erro ao conectar ao banco de dados: {e}")
+    except psycopg2.Error as erro:
+        print("Erro ao conectar ao banco de dados PostgreSQL:", erro)
+        print(erro)
         return None
-
+    
 def desconectar_banco_dados(conexao):
     if conexao:
         conexao.close()
-
+        
 def salvar_configuracoes_janela(janela, nome_secao):
     try:
         configuracoes = carregar_configuracoes()
