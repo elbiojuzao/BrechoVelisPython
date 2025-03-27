@@ -3,13 +3,19 @@ import psycopg2
 import json
 import customtkinter as ctk 
 
+load_dotenv()
+db_host = os.getenv("DB_HOST")
+db_name = os.getenv("DB_NAME")
+db_user = os.getenv("DB_USER")
+db_password = os.getenv("DB_PASSWORD")
+
 def conectar_banco_dados():
     try:
         conexao = psycopg2.connect(
-            host="db-brechovelis.c12aoooqwhpq.sa-east-1.rds.amazonaws.com",  #endpoint da AWS
-            database="postgres",
-            user="BrechoVelis",
-            password="Dragonforce17." 
+            host=db_host,  #endpoint da AWS
+            database=db_name,
+            user=db_user,
+            password=db_password 
         )
         return conexao
     except psycopg2.Error as erro:
