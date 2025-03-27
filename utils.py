@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+import os
 import sqlite3
 import psycopg2 
 import json
